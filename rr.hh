@@ -2,6 +2,7 @@
  * Aaron McDaid - redoing my range library. Calling it rr.hh for now
  * with namespace 'rr'
  */
+#include<utility>
 
 namespace rr {
     template<typename R, typename = void>
@@ -58,4 +59,27 @@ namespace rr {
     };
 
     pair_of_values<int> ints(int u) { return {0,u}; }
+
+    template <typename T>
+    auto
+    as_range(T &v)
+    ->decltype(std:: make_pair(v.begin(), v.end()))
+    {
+        return std:: make_pair(v.begin(), v.end());
+    }
+
+    template<typename I>
+    struct traits<std:: pair<I,I>> {
+        using R = std:: pair<I,I>;
+        static
+        bool empty      (R const &r) {
+            return r.first == r.second ;}
+        static
+        void advance    (R       &r) {
+                ++ r.first  ;}
+        static
+        typename R:: first_type :: value_type & front      (R const &r) {
+            return *r.first ;}
+    };
+
 } // namespace rr

@@ -3,6 +3,7 @@
 #include<iostream>
 #include<vector>
 using std:: vector;
+using std:: string;
 using namespace rr;
 int main () {
     auto r_i = ints(3);
@@ -13,4 +14,11 @@ int main () {
 
     r_i = ints(4);
     for(auto i : r_i) { PP(i); }
+
+    vector<string> v{"hi", "world", "of", "ranges"};
+    auto v_r = as_range(v);
+    while(!empty(v_r)) {
+        PP(front(v_r));
+        advance(v_r);
+    }
 }
