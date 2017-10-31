@@ -8,7 +8,7 @@ using namespace rr;
 int main () {
     auto r_i = ints(3);
     while(!empty(r_i)) {
-        PP(front(r_i));
+        PP(front_val(r_i));
         advance(r_i);
     }
 
@@ -18,7 +18,7 @@ int main () {
     vector<string> v{"hi", "world", "of", "ranges"};
     auto v_r = as_range(v);
     while(!empty(v_r)) {
-        PP(front(v_r));
+        PP(front_val(v_r));
         advance(v_r);
     }
     //*
@@ -29,7 +29,7 @@ int main () {
         return x.length();
     };
     while(!empty(mapped)) {
-        PP(front(mapped));
+        PP(front_val(mapped));
         advance(mapped);
     }
     //*/
@@ -38,7 +38,7 @@ int main () {
         return -x.length();
     };
     for(;!empty(o);advance(o)) {
-        PP(front(o));
+        PP(front_val(o));
     }
 
 }

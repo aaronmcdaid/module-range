@@ -13,9 +13,9 @@ namespace rr {
     ->decltype(traits<R>::empty(r)) {
         return traits<R>::empty(r); }
     template<typename R>
-    auto front  (R const &r)
-    ->decltype(traits<R>::front(r)) {
-        return traits<R>::front(r); }
+    auto front_val  (R const &r)
+    ->decltype(traits<R>::front_val(r)) {
+        return traits<R>::front_val(r); }
     template<typename R>
     auto advance    (R       &r)
     ->decltype(traits<R>::advance(r)) {
@@ -49,7 +49,7 @@ namespace rr {
         static
         bool empty      (R const &r) { return r.m_begin == r.m_end ;}
         static
-        T    front      (R const &r) { return r.m_begin; }
+        T    front_val  (R const &r) { return r.m_begin; }
         static
         void advance    (R       &r) {     ++ r.m_begin; }
         static
@@ -78,7 +78,7 @@ namespace rr {
         void advance    (R       &r) {
                 ++ r.first  ;}
         static
-        typename R:: first_type :: value_type & front      (R const &r) {
+        typename R:: first_type :: value_type front_val      (R const &r) {
             return *r.first ;}
     };
 
@@ -103,7 +103,7 @@ namespace rr {
         static
         void advance    (R       &r) { rr::advance( r.m_r ) ;}
         static
-        auto front      (R const &r) { return r.m_f(rr::front  ( r.m_r )) ;}
+        auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
     };
 
     struct map_tag_t {} map;
