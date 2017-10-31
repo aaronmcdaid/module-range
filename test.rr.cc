@@ -21,4 +21,24 @@ int main () {
         PP(front(v_r));
         advance(v_r);
     }
+    //*
+    as_range(v) |map;
+    as_range(v) |map|[](){};
+    auto v_r2 = as_range(v);
+    auto mapped = v_r2 |map|[](auto && x)->int{
+        return x.length();
+    };
+    while(!empty(mapped)) {
+        PP(front(mapped));
+        advance(mapped);
+    }
+    //*/
+
+    auto o = as_range(v) |map|[](auto && x)->int{
+        return -x.length();
+    };
+    for(;!empty(o);advance(o)) {
+        PP(front(o));
+    }
+
 }

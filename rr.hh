@@ -82,4 +82,44 @@ namespace rr {
             return *r.first ;}
     };
 
+    template<typename F, typename Tag_type>
+    struct forward_this_with_a_tag {
+        F m_r; // may be lvalue or rvalue
+    };
+
+    template<typename R, typename F>
+    struct mapping_range {
+        static_assert(!std::is_reference<R>{},"");
+        static_assert(!std::is_reference<F>{},"");
+        R m_r;
+        F m_f;
+    };
+
+    template<typename under_R, typename F>
+    struct traits<mapping_range<under_R,F>> {
+        using R = mapping_range<under_R,F>;
+        static
+        bool empty      (R const &r) { return rr:: empty(r.m_r);}
+        static
+        void advance    (R       &r) { rr::advance( r.m_r ) ;}
+        static
+        auto front      (R const &r) { return r.m_f(rr::front  ( r.m_r )) ;}
+    };
+
+    struct map_tag_t {} map;
+    template<typename R>
+    auto operator| (R && r, map_tag_t) {
+        return forward_this_with_a_tag<R, map_tag_t>    {   std::forward<R>(r)  };
+    }
+
+    template<typename R, typename Tag_type, typename Func>
+    auto operator| (forward_this_with_a_tag<R,Tag_type> f, Func && func) {
+        return mapping_range<   std::remove_reference_t<R>
+                            ,   std::remove_reference_t<Func>
+                            > { std::forward<R   >(f.m_r)
+                              , std::forward<Func>(func)
+                              };
+    }
+#if 0
+#endif
 } // namespace rr
