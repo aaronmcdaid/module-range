@@ -111,13 +111,21 @@ namespace rr {
     template <typename T>
     auto
     as_range(T &v)
-    ->decltype(pair_of_iterators<   decltype(v.begin())
-                                ,   decltype(v.end  ())
-                                >   {v.begin(),v.end()})
+    -> pair_of_iterators<   decltype(v.begin())
+                        ,   decltype(v.end  ())
+                        >
     {
-        return pair_of_iterators<   decltype(v.begin())
-                                ,   decltype(v.end  ())
-                                >   {v.begin(),v.end()};
+        return {v.begin(),v.end()};
+    }
+
+    template <typename T>
+    auto
+    as_range(T b, T e)
+    ->decltype(pair_of_iterators<   decltype(b)
+                                ,   decltype(e)
+                                >   {b,e})
+    {
+        return {b,e};
     }
 
     template<typename I>
