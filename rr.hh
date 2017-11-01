@@ -115,6 +115,7 @@ namespace rr {
     struct map_tag_t            {};     tagger_t<map_tag_t          >   map_range;
     struct map_collect_tag_t    {};     tagger_t<map_collect_tag_t  >   map_collect;
     struct collect_tag_t        {};     collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
+    struct take_collect_tag_t   {};     tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
     auto operator| (R && r, tagger_t<Tag_type>) {
@@ -154,6 +155,23 @@ namespace rr {
         while(!rr::empty(r)) {
             res.push_back( rr::front_val(r) );
             rr::advance(r);
+        }
+
+        return res;
+    }
+
+    template<typename R>
+    auto operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
+
+        auto r = std::forward<R   >(f.m_r); // copy/move the range here
+
+        using value_type = decltype (   rr::front_val( r )  );
+        std:: vector<value_type> res;
+
+        while(!rr::empty(r) && how_many>0) {
+            res.push_back( rr::front_val(r));
+            rr::advance(r);
+            --how_many;
         }
 
         return res;
