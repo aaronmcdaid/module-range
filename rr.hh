@@ -60,6 +60,7 @@ namespace rr {
     };
 
     pair_of_values<int> ints(int u) { return {0,u}; }
+    pair_of_values<int> ints(int l, int u) { return {l,u}; }
 
     template <typename T>
     auto
