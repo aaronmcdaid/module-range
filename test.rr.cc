@@ -19,6 +19,8 @@ int main () {
 
     vector<string> v{"hi", "world", "of", "ranges"};
     auto v_r = as_range(v);
+    static_assert(                                      rr:: is_range_v< decltype(v_r) >    , "");
+    static_assert(                                    ! rr:: is_range_v< decltype(v  ) >    , "");
     while(!empty(v_r)) {
         PP(front_val(v_r));
         advance(v_r);

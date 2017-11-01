@@ -18,6 +18,28 @@ namespace rr {
         struct priority_tag<0> {};
     }
 
+    namespace impl {
+        template<typename Possible_Range>
+        auto is_range(impl:: priority_tag<2>, Possible_Range &&)
+        -> decltype( typename traits< std::remove_reference_t<Possible_Range> > :: value_type{} , std:: true_type{})
+        { return {}; }
+
+        template<typename Possible_Range>
+        auto is_range(impl:: priority_tag<1>, Possible_Range &&)
+        -> std:: false_type
+        { return {}; }
+
+        template<typename Possible_Range>
+        constexpr
+        bool is_range()
+        {
+            using return_type = decltype(impl:: is_range(impl:: priority_tag<9>{}, std::declval<Possible_Range>()));
+            return return_type:: value;
+        }
+    }
+    template<typename Possible_Range>
+    constexpr bool is_range_v = impl:: is_range<Possible_Range>();
+
     template<typename R>
     auto empty  (R const &r)
     ->decltype(traits<R>::empty(r)) {
