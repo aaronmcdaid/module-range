@@ -106,7 +106,7 @@ namespace rr {
         auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
     };
 
-    struct map_tag_t {} map;
+    struct map_tag_t {} map_range;
     template<typename R>
     auto operator| (R && r, map_tag_t) {
         return forward_this_with_a_tag<R, map_tag_t>    {   std::forward<R>(r)  };

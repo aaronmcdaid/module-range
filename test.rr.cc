@@ -22,10 +22,10 @@ int main () {
         advance(v_r);
     }
     //*
-    as_range(v) |map;
-    as_range(v) |map|[](){};
+    as_range(v) |map_range;
+    as_range(v) |map_range|[](){};
     auto v_r2 = as_range(v);
-    auto mapped = v_r2 |map|[](auto && x)->int{
+    auto mapped = v_r2 |map_range|[](auto && x)->int{
         return x.length();
     };
     while(!empty(mapped)) {
@@ -34,7 +34,7 @@ int main () {
     }
     //*/
 
-    auto o = as_range(v) |map|[](auto && x)->int{
+    auto o = as_range(v) |map_range|[](auto && x)->int{
         return -x.length();
     };
     for(;!empty(o);advance(o)) {
