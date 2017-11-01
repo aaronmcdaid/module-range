@@ -3,6 +3,7 @@
  * with namespace 'rr'
  */
 #include<utility>
+#include<vector>
 
 namespace rr {
     template<typename R, typename = void>
@@ -112,7 +113,9 @@ namespace rr {
 
 
     struct map_tag_t {};
+    struct map_collect_tag_t {};
     tagger_t<map_tag_t> map_range;
+    tagger_t<map_collect_tag_t> map_collect;
 
     template<typename R, typename Tag_type>
     auto operator| (R && r, tagger_t<Tag_type>) {
@@ -126,6 +129,21 @@ namespace rr {
                             > { std::forward<R   >(f.m_r)
                               , std::forward<Func>(func)
                               };
+    }
+
+    template<typename R, typename Func>
+    auto operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
+        using value_type = decltype (   func    (   std::forward<R   >(f.m_r)   ));
+        std::vector<value_type> res;
+
+        auto r = std::forward<R   >(f.m_r); // copy/move the range here
+
+        while(!rr::empty(r)) {
+            res.push_back( func(rr::front_val(r)));
+            rr::advance(r);
+        }
+
+        return res;
     }
 #if 0
 #endif
