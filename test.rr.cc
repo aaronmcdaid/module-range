@@ -25,27 +25,22 @@ int main () {
         PP(front_val(v_r));
         advance(v_r);
     }
-    //*
-    as_range(v) |map_range;
-    as_range(v) |map_range|[](){};
-    auto v_r2 = as_range(v);
-    auto mapped = v_r2 |map_range|[](auto && x)->int{
+    auto mapped = v |map_range|[](auto && x)->int{
         return x.length();
     };
     while(!empty(mapped)) {
         PP(front_val(mapped));
         advance(mapped);
     }
-    //*/
 
-    auto o = as_range(v) |map_range|[](auto && x)->int{
+    auto o = v |map_range|[](auto && x)->int{
         return -x.length();
     };
     for(;!empty(o);advance(o)) {
         PP(front_val(o));
     }
-    auto collected = as_range(v) |map_collect|[](auto && x) { return 0.5+x.length(); };
-    auto recollected = as_range(collected) |map_range|[](auto && x){return -x;} |collect;
+    auto collected = v |map_collect|[](auto && x) { return 0.5+x.length(); };
+    auto recollected = collected |map_range|[](auto && x){return -x;} |collect;
     PP(collected, recollected);
 
 }
