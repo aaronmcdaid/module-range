@@ -106,9 +106,16 @@ namespace rr {
         auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
     };
 
-    struct map_tag_t {} map_range;
-    template<typename R>
-    auto operator| (R && r, map_tag_t) {
+    template<typename Tag_type>
+    struct tagger_t {
+    };
+
+
+    struct map_tag_t {};
+    tagger_t<map_tag_t> map_range;
+
+    template<typename R, typename Tag_type>
+    auto operator| (R && r, tagger_t<Tag_type>) {
         return forward_this_with_a_tag<R, map_tag_t>    {   std::forward<R>(r)  };
     }
 
