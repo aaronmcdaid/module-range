@@ -112,10 +112,9 @@ namespace rr {
     };
 
 
-    struct map_tag_t {};
-    struct map_collect_tag_t {};
-    tagger_t<map_tag_t> map_range;
-    tagger_t<map_collect_tag_t> map_collect;
+    struct map_tag_t            {};     tagger_t<map_tag_t          >   map_range;
+    struct map_collect_tag_t    {};     tagger_t<map_collect_tag_t  >   map_collect;
+    struct collect_tag_t        {};     collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
 
     template<typename R, typename Tag_type>
     auto operator| (R && r, tagger_t<Tag_type>) {
@@ -141,6 +140,19 @@ namespace rr {
 
         while(!rr::empty(r)) {
             res.push_back( func(rr::front_val(r)));
+            rr::advance(r);
+        }
+
+        return res;
+    }
+
+    template<typename R>
+    auto operator| (R && r, collect_tag_t) {
+        using value_type = decltype (   rr::front_val( r )  );
+        std:: vector<value_type> res;
+
+        while(!rr::empty(r)) {
+            res.push_back( rr::front_val(r) );
             rr::advance(r);
         }
 
