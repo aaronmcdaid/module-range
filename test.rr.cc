@@ -43,6 +43,7 @@ int main () {
         PP(front_val(o));
     }
     auto collected = as_range(v) |map_collect|[](auto && x) { return 0.5+x.length(); };
-    PP(collected);
+    auto recollected = as_range(collected) |map_range|[](auto && x){return -x;} |collect;
+    PP(collected, recollected);
 
 }
