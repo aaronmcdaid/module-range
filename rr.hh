@@ -116,11 +116,11 @@ namespace rr {
 
     template<typename R, typename Tag_type>
     auto operator| (R && r, tagger_t<Tag_type>) {
-        return forward_this_with_a_tag<R, map_tag_t>    {   std::forward<R>(r)  };
+        return forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
     }
 
-    template<typename R, typename Tag_type, typename Func>
-    auto operator| (forward_this_with_a_tag<R,Tag_type> f, Func && func) {
+    template<typename R, typename Func>
+    auto operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>
                             ,   std::remove_reference_t<Func>
                             > { std::forward<R   >(f.m_r)
