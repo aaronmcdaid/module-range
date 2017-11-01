@@ -9,6 +9,15 @@ namespace rr {
     template<typename R, typename = void>
     struct traits;
 
+    namespace impl {
+        template<int i>
+        struct priority_tag;
+        template<int i>
+        struct priority_tag : public priority_tag<i-1> {};
+        template<>
+        struct priority_tag<0> {};
+    }
+
     template<typename R>
     auto empty  (R const &r)
     ->decltype(traits<R>::empty(r)) {
