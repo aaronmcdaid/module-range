@@ -120,6 +120,7 @@ namespace rr {
     template<typename F, typename Tag_type>
     struct forward_this_with_a_tag {
         F m_r; // may be lvalue or rvalue
+        static_assert( is_range_v<F>, "");
     };
 
     template<typename R, typename F>
@@ -152,9 +153,18 @@ namespace rr {
     struct collect_tag_t        {};     collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
     struct take_collect_tag_t   {};     tagger_t<take_collect_tag_t >   take_collect;
 
-    template<typename R, typename Tag_type>
+    template<typename R, typename Tag_type
+        , std::enable_if_t< is_range_v<R> > * = nullptr
+        >
     auto operator| (R && r, tagger_t<Tag_type>) {
+        static_assert( is_range_v<R> ,"");
         return forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
+    }
+
+    // next, forward 'as_range()' if the lhs is not a range
+    template<typename R, typename Tag_type , std::enable_if_t<!is_range_v<R> > * = nullptr >
+    auto operator| (R && r, tagger_t<Tag_type> tag) {
+        return as_range(std::forward<R>(r)) | tag;
     }
 
     template<typename R, typename Func>
@@ -197,9 +207,9 @@ namespace rr {
 
         return res;
     }
-    template<typename R
-        , std::enable_if_t< !is_range_v<R> > * = nullptr
-        >
+
+    // next, forward 'as_range()' if the lhs is not a range
+    template<typename R , std::enable_if_t< !is_range_v<R> > * = nullptr >
     auto operator| (R && r, collect_tag_t) {
         return as_range(std::forward<R>(r)) | rr:: collect;
     }
