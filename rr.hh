@@ -47,6 +47,7 @@ namespace rr {
     template<typename T>
     struct traits< pair_of_values<T> > {
         using R = pair_of_values<T>;
+        using value_type = T;
         static
         bool empty      (R const &r) { return r.m_begin == r.m_end ;}
         static
@@ -73,6 +74,7 @@ namespace rr {
     template<typename I>
     struct traits<std:: pair<I,I>> {
         using R = std:: pair<I,I>;
+        using value_type = typename I:: value_type;
         static
         bool empty      (R const &r) {
             return r.first == r.second ;}
@@ -80,7 +82,7 @@ namespace rr {
         void advance    (R       &r) {
                 ++ r.first  ;}
         static
-        typename R:: first_type :: value_type front_val      (R const &r) {
+        value_type front_val      (R const &r) {
             return *r.first ;}
     };
 
@@ -100,6 +102,7 @@ namespace rr {
     template<typename under_R, typename F>
     struct traits<mapping_range<under_R,F>> {
         using R = mapping_range<under_R,F>;
+        using value_type = decltype( rr::front_val  ( std::declval<R>().m_r ));
         static
         bool empty      (R const &r) { return rr:: empty(r.m_r);}
         static
