@@ -61,6 +61,20 @@ namespace rr {
     ->decltype(traits<R>::end    (r)) {
         return traits<R>::end    (r); }
 
+    template<typename B, typename E>
+    struct pair_of_iterators : public std::pair<B,E>
+    {
+        static_assert(!std::is_reference<B>{}, "");
+        static_assert(!std::is_reference<E>{}, "");
+        pair_of_iterators(B b, E e) : std::pair<B,E>(b,e) {}
+        /* This struct looks pointless, but it's not.
+         * This struct, because it's in the rr:: namespace,
+         * can be found by ADL and therefore our begin/end are found easily
+         *
+         * The main place you see this is in the return from as_range()
+         */
+    };
+
     template<typename T>
     struct pair_of_values { T m_begin;
                             T m_end; };
@@ -97,9 +111,13 @@ namespace rr {
     template <typename T>
     auto
     as_range(T &v)
-    ->decltype(std:: make_pair(v.begin(), v.end()))
+    ->decltype(pair_of_iterators<   decltype(v.begin())
+                                ,   decltype(v.end  ())
+                                >   {v.begin(),v.end()})
     {
-        return std:: make_pair(v.begin(), v.end());
+        return pair_of_iterators<   decltype(v.begin())
+                                ,   decltype(v.end  ())
+                                >   {v.begin(),v.end()};
     }
 
     template<typename I>
@@ -115,6 +133,25 @@ namespace rr {
         static
         value_type front_val      (R const &r) {
             return *r.first ;}
+    };
+
+    template<typename B, typename E>
+    struct traits<pair_of_iterators<B,E>> {
+        using R = pair_of_iterators<B,E>;
+        using value_type = typename B:: value_type;
+        static
+        bool empty      (R const &r) {
+            return r.first == r.second ;}
+        static
+        void advance    (R       &r) {
+                ++ r.first  ;}
+        static
+        value_type front_val      (R const &r) {
+            return *r.first ;}
+        static
+        auto begin      (R       &r) { return r.first; }
+        static
+        auto end        (R       &r) { return r.second; }
     };
 
     template<typename F, typename Tag_type>
