@@ -182,8 +182,11 @@ namespace rr {
         return res;
     }
 
-    template<typename R>
+    template<typename R
+        , std::enable_if_t< is_range_v<R> > * = nullptr
+        >
     auto operator| (R && r, collect_tag_t) {
+        static_assert( is_range_v<R> ,"");
         using value_type = decltype (   rr::front_val( r )  );
         std:: vector<value_type> res;
 
@@ -193,6 +196,12 @@ namespace rr {
         }
 
         return res;
+    }
+    template<typename R
+        , std::enable_if_t< !is_range_v<R> > * = nullptr
+        >
+    auto operator| (R && r, collect_tag_t) {
+        return as_range(std::forward<R>(r)) | rr:: collect;
     }
 
     template<typename R>
