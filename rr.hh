@@ -105,7 +105,9 @@ namespace rr {
         auto end        (R       &r) { return iter_is_own_value<T>{r.m_end  };}
     };
 
+    inline
     pair_of_values<int> ints(int u) { return {0,u}; }
+    inline
     pair_of_values<int> ints(int l, int u) { return {l,u}; }
 
     template <typename T>
@@ -193,10 +195,10 @@ namespace rr {
     };
 
 
-    struct map_tag_t            {};     tagger_t<map_tag_t          >   map_range;
-    struct map_collect_tag_t    {};     tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t        {};     collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
-    struct take_collect_tag_t   {};     tagger_t<take_collect_tag_t >   take_collect;
+    struct map_tag_t            {};     extern  tagger_t<map_tag_t          >   map_range;
+    struct map_collect_tag_t    {};     extern  tagger_t<map_collect_tag_t  >   map_collect;
+    struct collect_tag_t        {};     extern  collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
+    struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type
         , std::enable_if_t< is_range_v<R> > * = nullptr
