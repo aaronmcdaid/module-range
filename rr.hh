@@ -133,10 +133,11 @@ namespace rr {
 
     template<typename R, typename Func>
     auto operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
-        using value_type = decltype (   func    (   std::forward<R   >(f.m_r)   ));
-        std::vector<value_type> res;
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
+
+        using value_type = decltype (   func   (  rr::front_val( r )  ));
+        std:: vector<value_type> res;
 
         while(!rr::empty(r)) {
             res.push_back( func(rr::front_val(r)));
