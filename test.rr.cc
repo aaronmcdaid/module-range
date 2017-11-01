@@ -1,10 +1,12 @@
 #include "rr.hh"
 #include "../bits.and.pieces/PP.hh"
+#include "../bits.and.pieces/utils.hh"
 #include<iostream>
 #include<vector>
 using std:: vector;
 using std:: string;
 using namespace rr;
+using utils:: operator<<;
 int main () {
     auto r_i = ints(3);
     while(!empty(r_i)) {
@@ -40,5 +42,7 @@ int main () {
     for(;!empty(o);advance(o)) {
         PP(front_val(o));
     }
+    auto collected = as_range(v) |map_collect|[](auto && x) { return 0.5+x.length(); };
+    PP(collected);
 
 }
