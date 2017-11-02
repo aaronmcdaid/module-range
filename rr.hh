@@ -189,6 +189,8 @@ namespace rr {
     template<typename R> constexpr bool
     has_trait_empty     =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::empty    (r) ,0){return 0;}, impl::declVal<R>()))->value;
     template<typename R> constexpr bool
+    has_trait_advance   =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return 0;}, impl::declVal<R>()))->value;
+    template<typename R> constexpr bool
     has_trait_front_val =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, impl::declVal<R>()))->value;
     template<typename R> constexpr bool
     has_trait_pull      =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::pull     (r) ,0){return 0;}, impl::declVal<R>()))->value;
@@ -234,7 +236,9 @@ namespace rr {
     template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
     auto pull       (R       &r)
     { return traits<R>::pull     (r); }
-    template<typename R , std::enable_if_t<!has_trait_pull<R>>* =nullptr>
+    template<typename R , std::enable_if_t<
+        !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance  <R>
+    >* =nullptr>
     auto pull       (R       &r) {
         auto copy = traits<R>::front_val(r);
         traits<R>::advance(r);
