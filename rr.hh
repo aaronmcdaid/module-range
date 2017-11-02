@@ -231,6 +231,15 @@ namespace rr {
     ->decltype(traits<R>::end    (r)) {
         return traits<R>::end    (r); }
 
+    template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
+    auto pull       (R       &r)
+    { return traits<R>::pull     (r); }
+    template<typename R , std::enable_if_t<!has_trait_pull<R>>* =nullptr>
+    auto pull       (R       &r) {
+        auto copy = traits<R>::front_val(r);
+        traits<R>::advance(r);
+        return copy; }
+
     /*
      * Next, a 'pair_of_iterators' type in the rr:: namespace. The main (only?)
      * reason for this is to allow 'begin' and 'end' to be defined appropriately,
