@@ -140,6 +140,7 @@ namespace rr {
         constexpr
         bool has_range_trait()
         {
+            static_assert(!std::is_reference<Possible_Range>{} ,"");
             using return_type = decltype(impl:: has_range_trait(impl:: priority_tag<9>{}, std::declval<Possible_Range>()));
             return return_type:: value;
         }
@@ -341,8 +342,8 @@ namespace rr {
     template<typename R, typename Tag_type>
     struct perfect_forward_this_with_a_tag {
         R m_r; // may be lvalue or rvalue
-        //static_assert( std:: is_reference<R>{}, "");
-        static_assert( is_range_v<R>, "");
+        static_assert( std:: is_reference<R>{}, ""); // lvalue or rvalue, but not value
+        static_assert( is_range_v< std::remove_reference_t<R> >, "");
     };
 
     // These two are crucial. This is where we overload '|' so this works:
@@ -352,14 +353,16 @@ namespace rr {
     // where 'x' is a range (or is convertible to a range via 'as_range' and
     // 'oper' is one of {foreach,map_range,mapr,map_collect,collect,take_collec}
     template<typename R, typename Tag_type
-        , std::enable_if_t< is_range_v<R> > * = nullptr // if 'x' is a range
+        , typename Rnonref = std::remove_reference_t<R>
+        , std::enable_if_t< is_range_v<Rnonref> > * = nullptr // if 'x' is a range
         >
     auto operator| (R && r, tagger_t<Tag_type>) {
-        static_assert( is_range_v<R> ,"");
-        return perfect_forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
+        static_assert( is_range_v<R> ,""); // TODO: make sure I can break this with an lvalue!
+        return perfect_forward_this_with_a_tag<R&&, Tag_type>    {   std::forward<R>(r)  };
     }
     template<typename R, typename Tag_type
-        , std::enable_if_t<!is_range_v<R> > * = nullptr // if 'x' is a not a range
+        , typename Rnonref = std::remove_reference_t<R>
+        , std::enable_if_t<!is_range_v<Rnonref> > * = nullptr // if 'x' is a not a range
         >
     auto operator| (R && r, tagger_t<Tag_type> tag)
     ->decltype(as_range(std::forward<R>(r)) | tag)
@@ -403,8 +406,8 @@ namespace rr {
 
     // |mapr| or |map_range|
     template<typename R, typename Func>
-    auto operator| (perfect_forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
-        return mapping_range<   std::remove_reference_t<R>
+    auto operator| (perfect_forward_this_with_a_tag<R&&,map_tag_t> f, Func && func) {
+        return mapping_range<   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
                             > { std::forward<R   >(f.m_r)
                               , std::forward<Func>(func)
@@ -413,9 +416,10 @@ namespace rr {
 
     // |collect|
     template<typename R, typename Func>
-    auto operator| (perfect_forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
+    auto operator| (perfect_forward_this_with_a_tag<R&&,map_collect_tag_t> f, Func func) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
+        static_assert(!std::is_reference<decltype(r)>{}, "");
 
         using value_type = decltype (   func   (  rr::front_val( r )  ));
         std:: vector<value_type> res;
@@ -429,9 +433,13 @@ namespace rr {
     }
 
     template<typename R
-        , std::enable_if_t< is_range_v<R> > * = nullptr
+        , typename Rnonref = std::remove_reference_t<R>
+        , std::enable_if_t< is_range_v<Rnonref> > * = nullptr
         >
     auto operator| (R && r, collect_tag_t) {
+        // should I copy 'r' in here?
+        // Or, adjust the other functions to work directly on
+        // the 'r' or 'f.m_r' that has been passed in?
         static_assert( is_range_v<R> ,"");
         using value_type = decltype (   rr::front_val( r )  );
         std:: vector<value_type> res;
@@ -445,15 +453,19 @@ namespace rr {
     }
 
     // next, forward 'as_range()' if the lhs is not a range
-    template<typename R , std::enable_if_t< !is_range_v<R> > * = nullptr >
+    template<typename R
+        , typename Rnonref = std::remove_reference_t<R>
+        , std::enable_if_t< !is_range_v<Rnonref> > * = nullptr >
     auto operator| (R && r, collect_tag_t) {
         return as_range(std::forward<R>(r)) | rr:: collect;
     }
 
+    // |take_collect
     template<typename R>
-    auto operator| (perfect_forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
+    auto operator| (perfect_forward_this_with_a_tag<R&&,take_collect_tag_t> f, int how_many) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
+        static_assert(!std::is_reference<decltype(r)>{}, "");
 
         using value_type = decltype (   rr::front_val( r )  );
         std:: vector<value_type> res;
