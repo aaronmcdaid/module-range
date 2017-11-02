@@ -43,4 +43,15 @@ int main () {
     auto recollected = collected |map_range|[](auto && x){return -x;} |collect;
     PP(collected, recollected);
 
+    { // test pull
+        auto p = std::make_pair(collected.begin(), collected.end());
+        while(!empty(p)) {
+            PP(pull(p));
+        }
+        auto ar = as_range(collected);
+        while(!empty(ar)) {
+            PP(pull(ar));
+        }
+    }
+
 }
