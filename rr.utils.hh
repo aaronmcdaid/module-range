@@ -49,13 +49,41 @@ namespace rr_utils {
             ->decltype(low (    std::forward<Ts>(ts)... )  )
             {   return low (    std::forward<Ts>(ts)... ); }
 
+            // Finally, the actual call operator. Maybe I should do cv-qualified versions too :-(
             template<typename ... Ts> decltype(auto) constexpr
             operator() (Ts && ... ts) { return call_me( priority_tag<9>{}, std::forward<Ts>(ts)... ); }
         };
     } // subnamespace impl
+
     template<typename F, typename G>
     auto overload_first(F&& f, G&& g) {
         return impl:: overload_first_t<F,G>(   std::forward<F>(f)
                                     ,   std::forward<G>(g) );
     }
+
+    namespace impl {
+        template<typename F, typename ... Ts> constexpr auto
+        can_apply_(rr_utils::priority_tag<2>, F && f, Ts && ... ts)
+        -> decltype( f(std::forward<Ts>(ts)...) , std::true_type{} )
+        { return {}; }
+
+        template<typename F, typename ... Ts> constexpr auto
+        can_apply_(rr_utils::priority_tag<1>, F &&  , Ts && ...   )
+        -> std:: false_type
+        { return {}; }
+    }
+
+    template<typename T> T declVal(); // better than std:: declval, because it complains less about being called!
+
+    template<typename ... Ts> constexpr auto
+    can_apply_ptr(Ts && ... ts)
+    ->decltype( impl::can_apply_(rr_utils::priority_tag<9>{}, std::forward<Ts>(ts)...)) *
+    { return nullptr; } // a pointer to either std::true_type or std::false_type
+
+    template<typename T> constexpr bool
+    demo_of_can_apply_ptr     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype( *x ,0){return 0;}, declVal<T>()))->value;
+
+    static_assert( demo_of_can_apply_ptr<int*>, "");
+    static_assert(!demo_of_can_apply_ptr<int >, "");
+
 }
