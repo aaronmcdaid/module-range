@@ -5,6 +5,8 @@
 #include<utility>
 #include<vector>
 
+#include"rr.utils.hh" // a number of useful things, not really range-specific
+
 /*
  * Brief description, and overview of this code
  * ============================================
@@ -111,28 +113,18 @@ namespace rr {
     struct traits;
 
     namespace impl {
-        /*  'priority_tag' is very useful to specify priority
-         *  among overloads that would otherwise be ambiguous.
-         *  https://stackoverflow.com/questions/43470741/how-does-eric-nieblers-implementation-of-stdis-function-work
-         */
-        template<int i>
-        struct priority_tag;
-        template<int i>
-        struct priority_tag : public priority_tag<i-1> {};
-        template<>
-        struct priority_tag<0> {};
     }
 
     namespace impl {
         template<typename Possible_Range
             , typename = decltype(traits< std::remove_reference_t<Possible_Range> > {})
             >
-        auto has_range_trait(impl:: priority_tag<2>, Possible_Range &&)
+        auto has_range_trait(rr_utils:: priority_tag<2>, Possible_Range &&)
         -> std:: true_type
         { return {}; }
 
         template<typename Possible_Range>
-        auto has_range_trait(impl:: priority_tag<1>, Possible_Range &&)
+        auto has_range_trait(rr_utils:: priority_tag<1>, Possible_Range &&)
         -> std:: false_type
         { return {}; }
 
@@ -141,7 +133,7 @@ namespace rr {
         bool has_range_trait()
         {
             static_assert(!std::is_reference<Possible_Range>{} ,"");
-            using return_type = decltype(impl:: has_range_trait(impl:: priority_tag<9>{}, std::declval<Possible_Range>()));
+            using return_type = decltype(impl:: has_range_trait(rr_utils:: priority_tag<9>{}, std::declval<Possible_Range>()));
             return return_type:: value;
         }
     }
@@ -171,18 +163,18 @@ namespace rr {
         template<typename T> T declVal(); // better than std:: declval, because it complains less about being called!
 
         template<typename F, typename ... Ts> constexpr auto
-        can_apply_(impl::priority_tag<2>, F && f, Ts && ... ts)
+        can_apply_(rr_utils::priority_tag<2>, F && f, Ts && ... ts)
         -> decltype( f(std::forward<Ts>(ts)...) , std::true_type{} )
         { return {}; }
 
         template<typename F, typename ... Ts> constexpr auto
-        can_apply_(impl::priority_tag<1>, F &&  , Ts && ...   )
+        can_apply_(rr_utils::priority_tag<1>, F &&  , Ts && ...   )
         -> std:: false_type
         { return {}; }
 
         template<typename ... Ts> constexpr auto
         can_apply_ptr(Ts && ... ts)
-        ->decltype( can_apply_(impl::priority_tag<9>{}, std::forward<Ts>(ts)...)) *
+        ->decltype( can_apply_(rr_utils::priority_tag<9>{}, std::forward<Ts>(ts)...)) *
         { return nullptr; } // a pointer to either std::true_type or std::false_type
     }
 
