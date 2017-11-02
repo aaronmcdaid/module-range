@@ -340,9 +340,13 @@ namespace rr {
     struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
-    struct perfect_forward_this_with_a_tag {
-        R m_r; // may be lvalue or rvalue
-        static_assert( std:: is_reference<R>{}, ""); // lvalue or rvalue, but not value
+    struct imperfect_forward_this_with_a_tag {
+        R m_r; /* may be lvalue or value, but *not* rvalue, as the temporary
+                * will soon be destroyed. e.g. The as_range object made from
+                * 'v' in this code will be destroyed quickly:
+                *           v |mapr| [](auto){}
+                */
+        static_assert(!std:: is_rvalue_reference<R>{}, ""); // lvalue or rvalue, but not value
         static_assert( is_range_v< std::remove_reference_t<R> >, "");
     };
 
@@ -358,7 +362,7 @@ namespace rr {
         >
     auto operator| (R && r, tagger_t<Tag_type>) {
         static_assert( is_range_v<R> ,""); // TODO: make sure I can break this with an lvalue!
-        return perfect_forward_this_with_a_tag<R&&, Tag_type>    {   std::forward<R>(r)  };
+        return imperfect_forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
     }
     template<typename R, typename Tag_type
         , typename Rnonref = std::remove_reference_t<R>
@@ -406,7 +410,7 @@ namespace rr {
 
     // |mapr| or |map_range|
     template<typename R, typename Func>
-    auto operator| (perfect_forward_this_with_a_tag<R&&,map_tag_t> f, Func && func) {
+    auto operator| (imperfect_forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
                             > { std::forward<R   >(f.m_r)
@@ -416,7 +420,7 @@ namespace rr {
 
     // |collect|
     template<typename R, typename Func>
-    auto operator| (perfect_forward_this_with_a_tag<R&&,map_collect_tag_t> f, Func func) {
+    auto operator| (imperfect_forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
         static_assert(!std::is_reference<decltype(r)>{}, "");
@@ -462,7 +466,7 @@ namespace rr {
 
     // |take_collect
     template<typename R>
-    auto operator| (perfect_forward_this_with_a_tag<R&&,take_collect_tag_t> f, int how_many) {
+    auto operator| (imperfect_forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
         static_assert(!std::is_reference<decltype(r)>{}, "");
