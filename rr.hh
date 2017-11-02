@@ -326,8 +326,9 @@ namespace rr {
     template<typename Tag_type>
     struct tagger_t { };
 
-    /* Don't worry about the 'extern' below. I think it's safe. Must ask
-     * StackOverflow about it though...
+    /* Don't worry about the 'extern' below. I think it's safe.
+     * I've asked StackOverflow about it:
+     *  https://stackoverflow.com/questions/47073805/safe-to-pass-empty-variables-by-value-even-with-no-linkage
      */
 
     struct foreach_tag_t        {};     extern  tagger_t<foreach_tag_t          >   foreach;
