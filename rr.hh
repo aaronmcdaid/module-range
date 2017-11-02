@@ -187,8 +187,14 @@ namespace rr {
     }
 
     template<typename R> constexpr bool
+    has_trait_empty     =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::empty    (r) ,0){return 0;}, impl::declVal<R>()))->value;
+    template<typename R> constexpr bool
     has_trait_front_val =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, impl::declVal<R>()))->value;
+    template<typename R> constexpr bool
+    has_trait_pull      =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::pull     (r) ,0){return 0;}, impl::declVal<R>()))->value;
 
+
+    static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
     static_assert( has_trait_front_val< std::pair<int*, int*> > , "");
 
 
