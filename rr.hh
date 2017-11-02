@@ -332,12 +332,12 @@ namespace rr {
      *  https://stackoverflow.com/questions/47073805/safe-to-pass-empty-variables-by-value-even-with-no-linkage
      */
 
-    struct foreach_tag_t        {};     extern  tagger_t<foreach_tag_t      >   foreach;
-    struct map_tag_t            {};     extern  tagger_t<map_tag_t          >   map_range;
-                                        extern  tagger_t<map_tag_t          >   mapr;
-    struct map_collect_tag_t    {};     extern  tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t        {};     extern           collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
-    struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
+    struct foreach_tag_t        {};     constexpr   tagger_t<foreach_tag_t      >   foreach;
+    struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
+                                        constexpr   tagger_t<map_tag_t          >   mapr;
+    struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
+    struct collect_tag_t        {};     constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
+    struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
     struct imperfect_forward_this_with_a_tag {
