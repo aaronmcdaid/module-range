@@ -167,6 +167,31 @@ namespace rr {
     static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
     static_assert(is_range_v< std::pair<int*, int*> >, "");
 
+    namespace impl {
+        template<typename T> T declVal(); // better than std:: declval, because it complains less about being called!
+
+        template<typename F, typename ... Ts> constexpr auto
+        can_apply_(impl::priority_tag<2>, F && f, Ts && ... ts)
+        -> decltype( f(std::forward<Ts>(ts)...) , std::true_type{} )
+        { return {}; }
+
+        template<typename F, typename ... Ts> constexpr auto
+        can_apply_(impl::priority_tag<1>, F &&  , Ts && ...   )
+        -> std:: false_type
+        { return {}; }
+
+        template<typename ... Ts> constexpr auto
+        can_apply_ptr(Ts && ... ts)
+        ->decltype( can_apply_(impl::priority_tag<9>{}, std::forward<Ts>(ts)...)) *
+        { return nullptr; } // a pointer to either std::true_type or std::false_type
+    }
+
+    template<typename R> constexpr bool
+    has_trait_front_val =(true?nullptr:impl::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, impl::declVal<R>()))->value;
+
+    static_assert( has_trait_front_val< std::pair<int*, int*> > , "");
+
+
     /*
      * Users will never call the functions in the trait object directly.
      * Instead, we synthesize all the functions, where possible, such
