@@ -331,23 +331,60 @@ namespace rr {
      *  https://stackoverflow.com/questions/47073805/safe-to-pass-empty-variables-by-value-even-with-no-linkage
      */
 
-    struct foreach_tag_t        {};     extern  tagger_t<foreach_tag_t          >   foreach;
+    struct foreach_tag_t        {};     extern  tagger_t<foreach_tag_t      >   foreach;
     struct map_tag_t            {};     extern  tagger_t<map_tag_t          >   map_range;
                                         extern  tagger_t<map_tag_t          >   mapr;
     struct map_collect_tag_t    {};     extern  tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t        {};     extern  collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
+    struct collect_tag_t        {};     extern           collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
     struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
 
-    template<typename F, typename Tag_type>
-    struct forward_this_with_a_tag {
-        F m_r; // may be lvalue or rvalue
-        static_assert( is_range_v<F>, "");
+    template<typename R, typename Tag_type>
+    struct perfect_forward_this_with_a_tag {
+        R m_r; // may be lvalue or rvalue
+        //static_assert( std:: is_reference<R>{}, "");
+        static_assert( is_range_v<R>, "");
     };
+
+    // These two are crucial. This is where we overload '|' so this works:
+    //
+    //    x|oper
+    //
+    // where 'x' is a range (or is convertible to a range via 'as_range' and
+    // 'oper' is one of {foreach,map_range,mapr,map_collect,collect,take_collec}
+    template<typename R, typename Tag_type
+        , std::enable_if_t< is_range_v<R> > * = nullptr // if 'x' is a range
+        >
+    auto operator| (R && r, tagger_t<Tag_type>) {
+        static_assert( is_range_v<R> ,"");
+        return perfect_forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
+    }
+    template<typename R, typename Tag_type
+        , std::enable_if_t<!is_range_v<R> > * = nullptr // if 'x' is a not a range
+        >
+    auto operator| (R && r, tagger_t<Tag_type> tag)
+    ->decltype(as_range(std::forward<R>(r)) | tag)
+    {
+        return as_range(std::forward<R>(r)) | tag;
+    }
+
+    /*
+     * Now, to start defining the various  |operations|
+     */
+    /*
+     * |mapr|   (also known as |map_range|
+     *
+     * Define the object which stores the underlying range, and the
+     * functor, by value.
+     * {Note, I should make sure it can 'move' non-copyables in}
+     *
+     * Then, define the traits for this 'mapping_range'
+     */
 
     template<typename R, typename F>
     struct mapping_range {
         static_assert(!std::is_reference<R>{},"");
         static_assert(!std::is_reference<F>{},"");
+        static_assert( is_range_v<R>, "");
         R m_r;
         F m_f;
     };
@@ -364,22 +401,9 @@ namespace rr {
         auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
     };
 
-    template<typename R, typename Tag_type
-        , std::enable_if_t< is_range_v<R> > * = nullptr
-        >
-    auto operator| (R && r, tagger_t<Tag_type>) {
-        static_assert( is_range_v<R> ,"");
-        return forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
-    }
-
-    // next, forward 'as_range()' if the lhs is not a range
-    template<typename R, typename Tag_type , std::enable_if_t<!is_range_v<R> > * = nullptr >
-    auto operator| (R && r, tagger_t<Tag_type> tag) {
-        return as_range(std::forward<R>(r)) | tag;
-    }
-
+    // |mapr| or |map_range|
     template<typename R, typename Func>
-    auto operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
+    auto operator| (perfect_forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>
                             ,   std::remove_reference_t<Func>
                             > { std::forward<R   >(f.m_r)
@@ -387,8 +411,9 @@ namespace rr {
                               };
     }
 
+    // |collect|
     template<typename R, typename Func>
-    auto operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
+    auto operator| (perfect_forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
 
@@ -426,7 +451,7 @@ namespace rr {
     }
 
     template<typename R>
-    auto operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
+    auto operator| (perfect_forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
 
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
 
