@@ -5,11 +5,116 @@
 #include<utility>
 #include<vector>
 
+/*
+ * Brief description, and overview of this code
+ * ============================================
+ *
+ * ( This documentation includes some stuff that isn't implemented. We
+ *   should implement more! )
+ *
+ *      vector<int>  v {2,3,5,7};
+ *      // print every value
+ *      v |foreach| [](auto x) { std::cout << x << '\n'; };
+ *      // print the square of each value
+ *      v   |mapr|      [](auto x) { return x*x; }
+ *          |foreach|   [](auto y) { std:: cout "x^2=" << y << '\n';};
+ *      // filter to only the odd ones, then print them:
+ *      v   |filter|  [](auto x) { return x%2 == 1; }
+ *          |foreach| [](auto x) { std::cout << x << '\n'; };
+ *
+ * ( say 'mapr' instead of 'map' simply to avoid clashing with 'std::map')
+ *
+ * Many different types can be considered as 'range types'. The obvious
+ * example is a pair of iterators, but there are many others too.
+ * A 'vector' is not itself a range; but it is trivially convertable
+ * to a range.
+ *
+ * A 'range' is typically a very lightweight object, like a pointer, that
+ * can be copied easily. It doesn't usually "own" the underlying data,
+ * but this library supports ownership where appropriate.
+ *
+ * A range will support some subset of these actions:
+ *  -   empty       ::: No more input is available to read
+ *  -   front_val   ::: Read the current value - repeated calls will return
+ *                      the same value (unless the underlying container has
+ *                      been modified by some other part of the system.
+ *  -   advance     ::: skip the current item and move to the next
+ *
+ *  -   full        ::: if an output range can no longer be written to
+ *  -   front_ref   ::: return a reference to the current item. Repeated
+ *                      calls will return a reference to the same object.
+ *  -   push        ::: write a value to an output range and advance. This
+ *                      is useful when treating the standard output as an
+ *                      output range. It's not possible to define 'front_ref'
+ *                      on such a range as we can't meaningful write to the
+ *                      "same place" in the output repeatedly. Once we write
+ *                      to the stream, our next write must be to the following
+ *                      'position' in the output range.
+ *  -   pull        ::: return the current value and also advance. As if
+ *                      running front_val and then advance. Useful when a
+ *                      range doesn't allow repeating read
+ *
+ * Via traits (see below), you can specify, for your own types, how these
+ * actions are to be performed on your objects.
+ * These names are all available in the rr:: namespace. They will use
+ * the underlying traits actions where they are provided and, in some cases,
+ * this library can synethesize extra functions where they are not explicit
+ * in your trait; for example, we can synthesize 'rr::pull' from 'front_val'
+ * and 'advance' if your trait does not contain 'advance'
+ *
+ * This becomes useful when you want to combine a range and a function,
+ * and create a new range which exposes range where the function has been
+ * applied to each element of the underlying range.
+ *
+ * ==
+ *
+ * A 'range type', R, here is a type for which the type traits<R> exists.
+ * More precisely, traits<R> can also be default constructed. The traits
+ * object has no state, its purpose is simply to record the type-specific
+ * details. For example, an input range must be able to support the 'rr::empty'
+ * function which tells us if more input is available. For a pair of iterators,
+ * this means testing the two iterators to see if they are equal. For a file
+ * input stream, we test the stream for end-of-file.
+ *
+ * (I'll try to document the functions in the order they appear below in
+ * the code)
+ *
+ *  is_range_v      ::: constexpr-bool function to test if a given
+ *                      type R has a suitable traits<R>
+ *
+ * The code then has the traits definition for a std::pair of iterators.
+ * Traits for other types are specified later in this code, but I brought
+ * std::pair to the top as it's simple and helps me to explain this system
+ *
+ *  template<typename I>
+ *  struct traits<std:: pair<I,I>>
+ *
+ * For now, this just means providing 'empty', 'advance' and 'front_val'
+ * In future, some functions for trait a pair as an output range should
+ * be added, such as 'full' and 'front_ref'.
+ *
+ * Next, the functions in 'rr::' are defined, relying on the operations
+ * provided in the traits object. For example, this defines 'rr::front_val':
+ *
+ *  template<typename R>
+ *  auto front_val  (R const &r)
+ *  ->decltype(traits<R>::front_val(r)) {
+ *      return traits<R>::front_val(r); }
+ *
+ * Another overload of 'rr::front_val' could be provided to synthesize
+ * front_val where the traits has 'front_ref', but not 'front_val'.
+ *
+ */
+
 namespace rr {
-    template<typename R, typename = void>
+    template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
     struct traits;
 
     namespace impl {
+        /*  'priority_tag' is very useful to specify priority
+         *  among overloads that would otherwise be ambiguous.
+         *  https://stackoverflow.com/questions/43470741/how-does-eric-nieblers-implementation-of-stdis-function-work
+         */
         template<int i>
         struct priority_tag;
         template<int i>
@@ -42,6 +147,37 @@ namespace rr {
     template<typename Possible_Range>
     constexpr bool is_range_v = impl:: has_range_trait<Possible_Range>();
 
+    // Let's start with the simplest example - and std::pair of iterators
+    template<typename I>
+    struct traits<std:: pair<I,I>> {
+        using R = std:: pair<I,I>;
+        using value_type = std::remove_reference_t<decltype( *std::declval<I>() )>;
+        static_assert(!std::is_reference<value_type>{}, "");
+        static
+        bool empty      (R const &r) {
+            return r.first == r.second ;}
+        static
+        void advance    (R       &r) {
+                ++ r.first  ;}
+        static
+        value_type front_val      (R const &r) {
+            return *r.first ;}
+    };
+    static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
+    static_assert(is_range_v< std::pair<int*, int*> >, "");
+
+    /*
+     * Users will never call the functions in the trait object directly.
+     * Instead, we synthesize all the functions, where possible, such
+     * as rr:empty, rr::front_val, rr::advance.
+     *
+     * This design allows us to synthesize extra functions. For example,
+     * if a trait has 'front' and 'advance', but not 'pull', then we
+     * are still able to synthesize 'rr::pull' using the first two.
+     * This allows each trait to focus on the smallest subset of
+     * necessary behaviour.
+     */
+
     template<typename R>
     auto empty  (R const &r)
     ->decltype(traits<R>::empty(r)) {
@@ -63,6 +199,13 @@ namespace rr {
     ->decltype(traits<R>::end    (r)) {
         return traits<R>::end    (r); }
 
+    /*
+     * Next, a 'pair_of_iterators' type in the rr:: namespace. The main (only?)
+     * reason for this is to allow 'begin' and 'end' to be defined appropriately,
+     * allowing  for(auto x : r) to work.
+     * This is the class used when applying thing like |
+     */
+
     template<typename B, typename E>
     struct pair_of_iterators : public std::pair<B,E>
     {
@@ -77,6 +220,11 @@ namespace rr {
          */
     };
 
+    /*
+     * 'pair_of_values', so that we can range between a pair of numbers.  This
+     * is related to 'iter_is_own_value', which is what we get if we call 'begin'
+     * and 'end' on a 'pair_of_values'.
+     */
     template<typename T>
     struct pair_of_values { T m_begin;
                             T m_end; };
@@ -112,6 +260,14 @@ namespace rr {
     inline
     pair_of_values<int> ints(int l, int u) { return {l,u}; }
 
+    /*
+     * as_range
+     * Converts a non-range to a range, where appropriate. The obvious examples
+     * are a container such as 'std::vector' or 'std::list'.  as_range can also
+     * be called with two iterators.
+     * I should also define an 'as_range' overload that accepts a range and
+     * forwards it as-is.
+     */
     template <typename T>
     auto
     as_range(T &v)
@@ -132,21 +288,6 @@ namespace rr {
         return {b,e};
     }
 
-    template<typename I>
-    struct traits<std:: pair<I,I>> {
-        using R = std:: pair<I,I>;
-        using value_type = typename I:: value_type;
-        static
-        bool empty      (R const &r) {
-            return r.first == r.second ;}
-        static
-        void advance    (R       &r) {
-                ++ r.first  ;}
-        static
-        value_type front_val      (R const &r) {
-            return *r.first ;}
-    };
-
     template<typename B, typename E>
     struct traits<pair_of_iterators<B,E>> {
         using R = pair_of_iterators<B,E>;
@@ -165,6 +306,36 @@ namespace rr {
         static
         auto end        (R       &r) { return r.second; }
     };
+
+    /*
+     * Above, all the basic underlying technology for a range has
+     * been defined. Now, the 'user-facing' code must be implemented,
+     * allowing   |mapr|  and  |filter|  and so on.
+     *
+     *  v |foreach| [](auto x){ std::cout << x << '\n'; }
+     *
+     * The above works because we overload the '|' operator. 'foreach'
+     * is an object of an empty tag type. Therefore  v|foreach  is
+     * a valid expression which doesn't do much except capture a reference
+     * to  v  . Then, via another overload of  |  , we apply the lambda.
+     * So, the above can be read as
+     *
+     *  (v | foreach)  |  [](auto x){ std::cout << x << '\n'; }
+     */
+
+    template<typename Tag_type>
+    struct tagger_t { };
+
+    /* Don't worry about the 'extern' below. I think it's safe. Must ask
+     * StackOverflow about it though...
+     */
+
+    struct foreach_tag_t        {};     extern  tagger_t<foreach_tag_t          >   foreach;
+    struct map_tag_t            {};     extern  tagger_t<map_tag_t          >   map_range;
+                                        extern  tagger_t<map_tag_t          >   mapr;
+    struct map_collect_tag_t    {};     extern  tagger_t<map_collect_tag_t  >   map_collect;
+    struct collect_tag_t        {};     extern  collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
+    struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename F, typename Tag_type>
     struct forward_this_with_a_tag {
@@ -191,16 +362,6 @@ namespace rr {
         static
         auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
     };
-
-    template<typename Tag_type>
-    struct tagger_t {
-    };
-
-
-    struct map_tag_t            {};     extern  tagger_t<map_tag_t          >   map_range;
-    struct map_collect_tag_t    {};     extern  tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t        {};     extern  collect_tag_t                   collect;    // no need for 'tagger_t', this directly runs
-    struct take_collect_tag_t   {};     extern  tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type
         , std::enable_if_t< is_range_v<R> > * = nullptr
