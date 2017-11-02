@@ -369,7 +369,9 @@ namespace rr {
      */
 
     template<typename Tag_type>
-    struct tagger_t { };
+    struct tagger_t {
+        constexpr tagger_t() {} // clang-3.8.0 insists on a user-provided default constructor
+    };
 
     /* Don't worry about the 'extern' below. I think it's safe.
      * I've asked StackOverflow about it:
@@ -380,7 +382,7 @@ namespace rr {
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t        {};     constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
+    struct collect_tag_t{constexpr collect_tag_t(){}};     constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
