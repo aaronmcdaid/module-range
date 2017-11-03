@@ -15,6 +15,29 @@ namespace rr_utils {
     template<>
     struct priority_tag<0> {};
 
+    namespace impl__is_invokable {
+        template<typename F, typename ... Args>
+        constexpr auto
+        is_invokable_one_overload(rr_utils::priority_tag<2>)
+        -> decltype( std::declval<F>()(std::declval<Args>()...), true )
+        { return true; }
+
+        template<typename F, typename ... Args>
+        constexpr auto
+        is_invokable_one_overload(rr_utils::priority_tag<1>)
+        -> decltype( false )
+        { return false; }
+
+        template<typename F, typename ... Args>
+        constexpr bool
+        is_invokable()
+        {
+            return is_invokable_one_overload<F, Args...>(rr_utils::priority_tag<9>{});
+        }
+    }
+
+    using impl__is_invokable:: is_invokable;  // to 'export' this to the rr_utils namespace
+
     namespace impl {
         template<typename F, typename G>
         struct overload_first_t {
