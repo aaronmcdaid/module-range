@@ -112,7 +112,7 @@ namespace rr {
     template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
     struct traits;
 
-    auto checker_for__is_range=[](auto&&x)->decltype(sizeof(  traits< std::remove_reference_t<decltype(x)>>{}  )){return{};};
+    auto checker_for__is_range=[](auto&&x)->decltype(void(  traits< std::remove_reference_t<decltype(x)>>{}  )){};
 
     template<typename Possible_Range >
     constexpr bool
@@ -137,10 +137,10 @@ namespace rr {
     static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
     static_assert(is_range_v< std::pair<int*, int*> >, "");
 
-    auto checker_for__has_trait_empty       = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){return{};};
-    auto checker_for__has_trait_advance     = [](auto&&r)->decltype(        traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return{};};
-    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::front_val(r) )){return{};};
-    auto checker_for__has_trait_pull        = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){return{};};
+    auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){};
+    auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::advance  (r) )){};
+    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::front_val(r) )){};
+    auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){};
 
     template<typename R> constexpr bool
     has_trait_empty     = rr_utils:: is_invokable<decltype(checker_for__has_trait_empty), R>();
