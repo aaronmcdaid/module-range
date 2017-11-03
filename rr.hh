@@ -114,10 +114,11 @@ namespace rr {
 
     template<typename Possible_Range >
     constexpr
-    bool is_range_v =(true?nullptr:rr_utils::can_apply_ptr(
-                [](auto x)-> decltype(traits<decltype(x)>{})* {return nullptr;}
-                , rr_utils::declVal< std::remove_reference_t<Possible_Range> >()
-        ))->value;
+    bool is_range_v =   (true?nullptr:rr_utils::can_apply_ptr([](auto x)-> decltype(sizeof(
+                                    traits<decltype(x)>{}    // test if this expression is valid ...
+                        )) {return 0;} ,
+                                    rr_utils::declVal< std::remove_reference_t<Possible_Range> >() // ... when x has this type
+                        ))->value;
 
     // Let's start with the simplest example - and std::pair of iterators
     template<typename I>
