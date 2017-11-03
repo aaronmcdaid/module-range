@@ -1,11 +1,17 @@
 /*
- * Aaron McDaid - redoing my range library. Calling it orange.hh for now
- * with namespace 'orange'
- */
-#include<utility>
-#include<vector>
-
-/*
+ * orange  - yet another range library
+ *
+ * By Aaron McDaid - aaron.mcdaid@gmail.com
+ *
+ *
+ * In the code below, I'm trying to organize it so that it can be
+ * read from top to bottom and is understandable.
+ *
+ * Where possible, I put some tests into a 'testing_namespace'. You might
+ * find it useful to just search for that string in this file and read
+ * the tests.
+ *
+ *
  * Brief description, and overview of this code
  * ============================================
  *
@@ -13,11 +19,14 @@
  *   should implement more! )
  *
  *      vector<int>  v {2,3,5,7};
+ *
  *      // print every value
  *      v |foreach| [](auto x) { std::cout << x << '\n'; };
+ *
  *      // print the square of each value
  *      v   |mapr|      [](auto x) { return x*x; }
  *          |foreach|   [](auto y) { std:: cout "x^2=" << y << '\n';};
+ *
  *      // filter to only the odd ones, then print them:
  *      v   |filter|  [](auto x) { return x%2 == 1; }
  *          |foreach| [](auto x) { std::cout << x << '\n'; };
@@ -106,6 +115,14 @@
  *
  */
 
+#include<utility>
+#include<vector>
+
+/*
+ * rr_utils
+ *
+ * I define 'is_invokable' in this namespace as it's range specific and might be useful elsewhere.
+ */
 namespace rr_utils {
     /*  'priority_tag' is very useful to specify priority
      *  among overloads that would otherwise be ambiguous.
@@ -142,14 +159,27 @@ namespace rr_utils {
     using impl__is_invokable:: is_invokable;  // to 'export' this to the rr_utils namespace
 
     namespace testing_namespace {
-        auto checker_for__has_size_method = [](auto&&x)->decltype(void(  x.size()  )){};
-        static_assert( rr_utils:: is_invokable<decltype(checker_for__has_size_method), std::vector<int> >() ,"");
-        static_assert(!rr_utils:: is_invokable<decltype(checker_for__has_size_method), int              >() ,"");
+        /*
+         * To make a tester which checks if a give type has a '.size()' method, we define a lambda with the
+         * relevant expression 'x.size()'. And also, we test if addition, (x+x), is defined.
+         */
+        auto checker_for__has_size_method   = [](auto&&x)->decltype(void(  x.size() )){};
+        auto checker_for__has_addition      = [](auto&&x)->decltype(void(  x + x    )){};
+
+        template<typename Arg>
+        constexpr bool has_size_method  = rr_utils:: is_invokable<decltype(checker_for__has_size_method), Arg >();
+        template<typename Arg>
+        constexpr bool has_addition     = rr_utils:: is_invokable<decltype(checker_for__has_addition), Arg >();
+
+        static_assert( has_size_method< std::vector<int> > ,"");
+        static_assert(!has_size_method< int              > ,"");
+        static_assert( has_size_method< std::vector<int> > ,"");
+        static_assert(!has_size_method< int              > ,"");
     }
 }
 
 namespace orange {
-    template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
+    template<typename R>
     struct traits;
 
     auto checker_for__is_range=[](auto&&x)->decltype(void(  traits< std::remove_reference_t<decltype(x)>>{}  )){};
@@ -540,6 +570,4 @@ namespace orange {
 
         return res;
     }
-#if 0
-#endif
 } // namespace orange
