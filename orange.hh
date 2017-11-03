@@ -277,7 +277,7 @@ namespace orange {
     // one overload for 'front_ref'
     template<typename R>
     auto constexpr
-    front_ref  (R && r)
+    front_ref  (R & r)
     ->decltype(traits<R>::front_ref(r)) {
         return traits<R>::front_ref(r); }
 

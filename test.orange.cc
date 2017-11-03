@@ -42,7 +42,8 @@ int main () {
     auto collected = v |map_collect|[](auto && x) { return 0.5+x.length(); };
     auto recollected = collected |map_range|[](auto && x){return -x;} |collect;
     PP(collected, recollected);
-    orange::front_ref(as_range(collected)) += 100;
+    auto collected_as_range = as_range(collected);
+    orange::front_ref(collected_as_range) += 100;
     PP(collected);
 
     { // test pull
