@@ -137,14 +137,19 @@ namespace rr {
     static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
     static_assert(is_range_v< std::pair<int*, int*> >, "");
 
+    auto checker_for__has_trait_empty       = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){return{};};
+    auto checker_for__has_trait_advance     = [](auto&&r)->decltype(        traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return{};};
+    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::front_val(r) )){return{};};
+    auto checker_for__has_trait_pull        = [](auto&&r)->decltype(sizeof( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){return{};};
+
     template<typename R> constexpr bool
-    has_trait_empty     =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::empty    (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
+    has_trait_empty     = rr_utils:: is_invokable<decltype(checker_for__has_trait_empty), R>();
     template<typename R> constexpr bool
-    has_trait_advance   =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
+    has_trait_advance   = rr_utils:: is_invokable<decltype(checker_for__has_trait_advance), R>();
     template<typename R> constexpr bool
-    has_trait_front_val =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, rr_utils::declval<R>()))->value;
+    has_trait_front_val = rr_utils:: is_invokable<decltype(checker_for__has_trait_front_val), R>();
     template<typename R> constexpr bool
-    has_trait_pull      =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::pull     (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
+    has_trait_pull      = rr_utils:: is_invokable<decltype(checker_for__has_trait_pull), R>();
 
 
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
