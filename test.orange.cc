@@ -60,4 +60,6 @@ int main () {
     constexpr auto t = ints(5) | accumulate;
     PP(t);
 
+    PP( as_range(std:: vector<int>{1,2,3}) | accumulate);
+
 }
