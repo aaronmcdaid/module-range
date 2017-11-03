@@ -484,6 +484,7 @@ namespace orange {
     struct foreach_tag_t        {};     constexpr   tagger_t<foreach_tag_t      >   foreach;
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
+    struct filter_tag_t         {};     constexpr   tagger_t<filter_tag_t       >   filter;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
     struct collect_tag_t{constexpr collect_tag_t(){}};
                                         constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
@@ -562,6 +563,52 @@ namespace orange {
     auto constexpr
     operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>      // so we store it by value
+                            ,   std::remove_reference_t<Func>
+                            > { std::move         (f.m_r)
+                              , std::forward<Func>(func)
+                              };
+    }
+
+    template<typename R, typename F>
+    struct filter_range {
+        static_assert(!std::is_reference<R>{},"");
+        static_assert(!std::is_reference<F>{},"");
+        static_assert( is_range_v<R>, "");
+        R m_r;
+        F m_f;
+        constexpr
+        void
+        skip_if_necessary() {
+            while(!orange::empty(m_r) && !m_f(orange::front_val(m_r))) {
+                orange::advance(m_r);
+            }
+        }
+
+        template<typename RR, typename FF>
+        constexpr
+        filter_range(RR && r, FF && f)
+        : m_r(std::forward<RR>(r))
+        , m_f(std::forward<FF>(f))
+        { skip_if_necessary(); }
+    };
+
+    template<typename under_R, typename F>
+    struct traits<filter_range<under_R,F>> {
+        using R = filter_range<under_R,F>;
+        using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
+        static constexpr
+        bool empty      (R const &r) { return orange:: empty(r.m_r);}
+        static constexpr
+        void advance    (R       &r) { orange::advance( r.m_r ); r.skip_if_necessary() ;}
+        static constexpr
+        auto front_val  (R const &r) { return orange::front_val  ( r.m_r ) ;}
+    };
+
+    // |filter|
+    template<typename R, typename Func>
+    auto constexpr
+    operator| (forward_this_with_a_tag<R,filter_tag_t> f, Func && func) {
+        return filter_range <   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
                             > { std::move         (f.m_r)
                               , std::forward<Func>(func)
@@ -654,5 +701,27 @@ namespace orange {
         constexpr double x[] = {1.0, 2.7, 3.14};
         static_assert(1.0 + 2.7 + 3.14 == (as_range(std::begin(x), std::end(x)) | accumulate) ,"");
         static_assert(1.0 + 2.7 + 3.14 == (as_range(x)                          | accumulate) ,"");
+
+        struct greater_than_5_t {
+            constexpr greater_than_5_t() {}
+            constexpr bool operator() (int x) const { return x>5; }
+        };
+        struct odd_t {
+            constexpr odd_t() {}
+            constexpr bool operator() (int x) const { return x % 2 == 1; }
+        };
+        struct even_t {
+            constexpr even_t() {}
+            constexpr bool operator() (int x) const { return x % 2 == 0; }
+        };
+        struct negate_t {
+            constexpr negate_t() {}
+            template<typename T>
+            constexpr auto operator() (T x) const { return -x; }
+        };
+        static_assert(20 == (ints(10) |filter| even_t{}             |accumulate) ,"");
+        static_assert(25 == (ints(10) |filter| odd_t{}              |accumulate) ,"");
+        static_assert(30 == (ints(10) |filter| greater_than_5_t{}   |accumulate) ,"");
+        static_assert(-30 == (ints(10) |filter| greater_than_5_t{} |mapr| negate_t{}   |accumulate) ,"");
     }
 } // namespace orange
