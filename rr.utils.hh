@@ -75,7 +75,22 @@ namespace rr_utils {
 
     template<typename T>
     T declval() // better than std:: declval, because it complains less about being called!
+    // NOTE: I never really call it, of course. It's only used in the non-taken
+    // branch of an application of the ternary operator, e.g.
+    //       false ? nullptr : rr_utils::declval<int*>()
+    // It's useful when using 'can_apply_ptr'.
     { struct wrap { T t; }; return ((wrap*)nullptr) -> t; }
+
+
+    /*
+     * To understand 'can_apply_ptr' first look at the demo just after it, made up
+     * of  'can_be_dereferenced_like_a_pointer' and the two static assertions applying
+     * 'can_be_dereferenced_like_a_pointer' to  'int*'  and to  'int'.
+     * That involves testing whether the expression (*x)  is valid.
+     *
+     * The rest of the expression ("true?nullptr:...") looks complex, but you can copy
+     * and paste it to other tests you want to make
+     */
 
     template<typename ... Ts> constexpr auto
     can_apply_ptr(Ts && ... )
@@ -83,9 +98,21 @@ namespace rr_utils {
     { return nullptr; } // a pointer to either std::true_type or std::false_type
 
     template<typename T> constexpr bool
-    demo_of_can_apply_ptr     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype( *x ,0){return 0;}, rr_utils:: declval<T>()))->value;
+    can_be_dereferenced_like_a_pointer     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype(sizeof(
+                *x // test if this expression is valid ...
+        )){return 0;},
+                rr_utils:: declval<T>() // ... when 'x' has type T
+        ))->value;
+    template<typename T> constexpr bool
+    can_be_added_to_itself     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype(sizeof(
+                x+x // test if this expression is valid ...
+        )){return 0;},
+                rr_utils:: declval<T>() // ... when 'x' has type T
+        ))->value;
 
-    static_assert( demo_of_can_apply_ptr<int*>, "");
-    static_assert(!demo_of_can_apply_ptr<int >, "");
+    static_assert( can_be_dereferenced_like_a_pointer<int*>, "");
+    static_assert(!can_be_dereferenced_like_a_pointer<int >, "");
+    static_assert( can_be_added_to_itself<int >, "");
+    static_assert(!can_be_added_to_itself<int*>, "");
 
 }
