@@ -385,20 +385,20 @@ namespace orange {
 
     template<typename T>
     struct traits< pair_of_values<T> > {
-        template<typename RR> static constexpr
-        bool empty      (RR && r)   { return r.m_begin == r.m_end ;}
+        template<typename R> static constexpr
+        bool empty      (R &  r)   { return r.m_begin == r.m_end ;}
 
-        template<typename RR> static constexpr
-        T    front_val  (RR && r)   { return r.m_begin; }
+        template<typename R> static constexpr
+        T    front_val  (R &  r)   { return r.m_begin; }
 
-        template<typename RR> static constexpr
-        void advance    (RR && r)   {     ++ r.m_begin; }
+        template<typename R> static constexpr
+        void advance    (R &  r)   {     ++ r.m_begin; }
 
-        template<typename RR> static constexpr
-        auto begin      (RR && r)   { return iter_is_own_value<T>{r.m_begin};}
+        template<typename R> static constexpr
+        auto begin      (R &  r)   { return iter_is_own_value<T>{r.m_begin};}
 
-        template<typename RR> static constexpr
-        auto end        (RR && r)   { return iter_is_own_value<T>{r.m_end  };}
+        template<typename R> static constexpr
+        auto end        (R &  r)   { return iter_is_own_value<T>{r.m_end  };}
     };
 
     inline
@@ -430,23 +430,23 @@ namespace orange {
 
     template<typename B, typename E>
     struct traits<pair_of_iterators<B,E>> {
-        template<typename RR> static constexpr
+        template<typename R> static constexpr
         bool
-        empty           (RR && r)   { return r.first == r.second ;}
+        empty           (R & r)   { return r.first == r.second ;}
 
-        template<typename RR> static constexpr
+        template<typename R> static constexpr
         void
-        advance         (RR && r)   { ++ r.first  ;}
+        advance         (R & r)   { ++ r.first  ;}
 
-        template<typename RR> static constexpr
+        template<typename R> static constexpr
         decltype(auto)
-        front_ref       (RR && r)   { return * std::forward<RR>(r) .first ;}
+        front_ref       (R & r)   { return * std::forward<R>(r) .first ;}
 
-        template<typename RR> static constexpr
-        auto begin      (RR && r)   { return r.first; }
+        template<typename R> static constexpr
+        auto begin      (R & r)   { return r.first; }
 
-        template<typename RR> static constexpr
-        auto end        (RR && r)   { return r.second; }
+        template<typename R> static constexpr
+        auto end        (R & r)   { return r.second; }
     };
 
     /*
