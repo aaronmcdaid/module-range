@@ -193,16 +193,16 @@ namespace orange {
         using value_type = std::remove_reference_t<decltype( *std::declval<I>() )>;
 
         template<typename RR> static constexpr
-        bool empty      (RR && r) { return r.first == r.second ;}
+        bool
+        empty           (RR && r)   { return r.first == r.second ;}
 
         template<typename RR> static
-        void advance    (RR && r) { ++ r.first  ;}
+        void
+        advance         (RR && r)   { ++ r.first  ;}
 
         template<typename RR> static constexpr
-        value_type front_val      (RR && r) { return *r.first ;}
-
-        template<typename RR> static constexpr
-        decltype(auto) front_ref      (RR && r) { return * std::forward<RR>(r) .first ;}
+        decltype(auto)
+        front_ref       (RR && r)   { return * r.first ;}
     };
 
     namespace testing_namespace {
@@ -235,7 +235,7 @@ namespace orange {
 
 
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
-    static_assert( has_trait_front_val< std::pair<int*, int*> > , "");
+    static_assert(!has_trait_front_val< std::pair<int*, int*> > , "");
     static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
     static_assert(!has_trait_front_ref< std::vector<int> > , "");
 
@@ -252,10 +252,12 @@ namespace orange {
      * necessary behaviour.
      */
 
+    // just one overload for 'empty'
     template<typename R>
-    auto empty  (R const &r)
-    ->decltype(traits<R>::empty(r)) {
-        return traits<R>::empty(r); }
+    auto
+    empty  (R const &r)
+    ->decltype(traits<R>::empty(r))
+    { return traits<R>::empty(r); }
 
     // two overloads for 'front_val', as we can use 'front_ref'
     // instead if it's present.
@@ -270,23 +272,43 @@ namespace orange {
     auto front_val  (R const &r)
     ->decltype(auto) { return traits<R>::front_ref(r); }
 
+    // one overload for 'front_ref'
     template<typename R>
     auto front_ref  (R && r)
     ->decltype(traits<R>::front_ref(r)) {
         return traits<R>::front_ref(r); }
+
+    // one overload for 'advance'
     template<typename R>
     auto advance    (R       &r)
     ->decltype(traits<R>::advance(r)) {
         return traits<R>::advance(r); }
+
+    /* Next, we see 'begin' and 'end', which are useful
+     * for working with range-based for.
+     *
+     * TODO: synthesize a suitable pair of iterators
+     * for range types that don't specify a begin and
+     * end of their own.
+     */
+
+    // one overload for 'begin'
     template<typename R>
     auto begin      (R       &r)
     ->decltype(traits<R>::begin  (r)) {
         return traits<R>::begin  (r); }
+
+    // one overload for 'end'
     template<typename R>
     auto end        (R       &r)
     ->decltype(traits<R>::end    (r)) {
         return traits<R>::end    (r); }
 
+    /* Three overloads for 'pull'.
+     *  1. has 'pull' in its trait
+     *  2. doesn't have 'pull' but does have 'front_val' and 'advance'
+     *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
+     */
     template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
     auto pull       (R       &r)
     { return traits<R>::pull     (r); }
@@ -304,12 +326,15 @@ namespace orange {
         auto copy = traits<R>::front_ref(r);
         traits<R>::advance(r);
         return copy; }
+}
+
+namespace orange {
 
     /*
      * Next, a 'pair_of_iterators' type in the orange:: namespace. The main (only?)
-     * reason for this is to allow 'begin' and 'end' to be defined appropriately,
-     * allowing  for(auto x : r) to work.
-     * This is the class used when applying thing like |
+     * reason for this (as opposed to an std::pair of iterators) is to allow
+     * 'begin' and 'end' to be defined appropriately, allowing  for(auto x : r) to
+     * work.  This is the class used when applying thing like '|'
      */
 
     template<typename B, typename E>
@@ -317,7 +342,9 @@ namespace orange {
     {
         static_assert(!std::is_reference<B>{}, "");
         static_assert(!std::is_reference<E>{}, "");
-        pair_of_iterators(B b, E e) : std::pair<B,E>(b,e) {}
+
+        using std:: pair<B,E> :: pair; // to inherit the constructors
+
         /* This struct looks pointless, but it's not.
          * This struct, because it's in the orange:: namespace,
          * can be found by ADL and therefore our begin/end are found easily
@@ -327,8 +354,10 @@ namespace orange {
     };
 
     /*
-     * 'pair_of_values', so that we can range between a pair of numbers.  This
-     * is related to 'iter_is_own_value', which is what we get if we call 'begin'
+     * 'pair_of_values', so that we can range between a pair of numbers.  See
+     * the 'ints' function below.
+     *
+     * This is related to 'iter_is_own_value', which is what we get if we call 'begin'
      * and 'end' on a 'pair_of_values'.
      */
     template<typename T>
@@ -347,18 +376,20 @@ namespace orange {
 
     template<typename T>
     struct traits< pair_of_values<T> > {
-        using R = pair_of_values<T>;
-        using value_type = T;
-        static
-        bool empty      (R const &r) { return r.m_begin == r.m_end ;}
-        static
-        T    front_val  (R const &r) { return r.m_begin; }
-        static
-        void advance    (R       &r) {     ++ r.m_begin; }
-        static
-        auto begin      (R       &r) { return iter_is_own_value<T>{r.m_begin};}
-        static
-        auto end        (R       &r) { return iter_is_own_value<T>{r.m_end  };}
+        template<typename RR> static constexpr
+        bool empty      (RR && r)   { return r.m_begin == r.m_end ;}
+
+        template<typename RR> static constexpr
+        T    front_val  (RR && r)   { return r.m_begin; }
+
+        template<typename RR> static constexpr
+        void advance    (RR && r)   {     ++ r.m_begin; }
+
+        template<typename RR> static constexpr
+        auto begin      (RR && r)   { return iter_is_own_value<T>{r.m_begin};}
+
+        template<typename RR> static constexpr
+        auto end        (RR && r)   { return iter_is_own_value<T>{r.m_end  };}
     };
 
     inline
@@ -377,44 +408,34 @@ namespace orange {
     template <typename T>
     auto
     as_range(T &v)
-    -> pair_of_iterators<   decltype(v.begin())
-                        ,   decltype(v.end  ())
-                        >
-    {
-        return {v.begin(),v.end()};
-    }
+    -> pair_of_iterators<   decltype(v.begin()) ,   decltype(v.end  ()) >
+    { return {v.begin(),v.end()}; }
 
     template <typename T>
     auto
     as_range(T b, T e)
-    ->decltype(pair_of_iterators<   decltype(b)
-                                ,   decltype(e)
-                                >   {b,e})
-    {
-        return {b,e};
-    }
+    ->decltype(pair_of_iterators<   decltype(b) ,   decltype(e) >   {b,e})
+    { return {b,e}; }
 
     template<typename B, typename E>
     struct traits<pair_of_iterators<B,E>> {
-        using R = pair_of_iterators<B,E>;
-        using value_type = typename B:: value_type;
+        template<typename RR> static constexpr
+        bool
+        empty           (RR && r)   { return r.first == r.second ;}
 
-        static
-        bool empty      (R const &r) {
-            return r.first == r.second ;}
+        template<typename RR> static constexpr
+        void
+        advance         (RR && r)   { ++ r.first  ;}
 
-        static
-        void advance    (R       &r) {
-                ++ r.first  ;}
+        template<typename RR> static constexpr
+        decltype(auto)
+        front_ref       (RR && r)   { return * std::forward<RR>(r) .first ;}
 
-        template<typename RR>
-        static
-        decltype(auto) front_ref      (RR && r) {
-            return * std::forward<RR>(r) .first ;}
-        static
-        auto begin      (R       &r) { return r.first; }
-        static
-        auto end        (R       &r) { return r.second; }
+        template<typename RR> static constexpr
+        auto begin      (RR && r)   { return r.first; }
+
+        template<typename RR> static constexpr
+        auto end        (RR && r)   { return r.second; }
     };
 
     /*
@@ -447,7 +468,8 @@ namespace orange {
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
-    struct collect_tag_t{constexpr collect_tag_t(){}};     constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
+    struct collect_tag_t{constexpr collect_tag_t(){}};
+                                        constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
