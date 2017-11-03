@@ -117,7 +117,7 @@ namespace rr {
     bool is_range_v =   (true?nullptr:rr_utils::can_apply_ptr([](auto x)-> decltype(sizeof(
                                     traits<decltype(x)>{}    // test if this expression is valid ...
                         )) {return 0;} ,
-                                    rr_utils::declVal< std::remove_reference_t<Possible_Range> >() // ... when x has this type
+                                    rr_utils::declval< std::remove_reference_t<Possible_Range> >() // ... when x has this type
                         ))->value;
 
     // Let's start with the simplest example - and std::pair of iterators
@@ -140,13 +140,13 @@ namespace rr {
     static_assert(is_range_v< std::pair<int*, int*> >, "");
 
     template<typename R> constexpr bool
-    has_trait_empty     =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::empty    (r) ,0){return 0;}, rr_utils::declVal<R>()))->value;
+    has_trait_empty     =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::empty    (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
     template<typename R> constexpr bool
-    has_trait_advance   =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return 0;}, rr_utils::declVal<R>()))->value;
+    has_trait_advance   =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::advance  (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
     template<typename R> constexpr bool
-    has_trait_front_val =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, rr_utils::declVal<R>()))->value;
+    has_trait_front_val =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::front_val(r) ,0){return 0;}, rr_utils::declval<R>()))->value;
     template<typename R> constexpr bool
-    has_trait_pull      =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::pull     (r) ,0){return 0;}, rr_utils::declVal<R>()))->value;
+    has_trait_pull      =(true?nullptr:rr_utils::can_apply_ptr([](auto&&r)->decltype( traits<std::remove_reference_t<decltype(r)>>::pull     (r) ,0){return 0;}, rr_utils::declval<R>()))->value;
 
 
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");

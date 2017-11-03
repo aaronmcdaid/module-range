@@ -74,16 +74,16 @@ namespace rr_utils {
     }
 
     template<typename T>
-    T declVal() // better than std:: declval, because it complains less about being called!
+    T declval() // better than std:: declval, because it complains less about being called!
     { struct wrap { T t; }; return ((wrap*)nullptr) -> t; }
 
     template<typename ... Ts> constexpr auto
-    can_apply_ptr(Ts && ... ts)
-    ->decltype( impl::can_apply_(rr_utils::priority_tag<9>{}, std::forward<Ts>(ts)...)) *
+    can_apply_ptr(Ts && ... )
+    ->decltype( impl::can_apply_(rr_utils::priority_tag<9>{}, std::declval<Ts>()...)) *
     { return nullptr; } // a pointer to either std::true_type or std::false_type
 
     template<typename T> constexpr bool
-    demo_of_can_apply_ptr     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype( *x ,0){return 0;}, declVal<T>()))->value;
+    demo_of_can_apply_ptr     =(true?nullptr:can_apply_ptr([](auto&&x)->decltype( *x ,0){return 0;}, rr_utils:: declval<T>()))->value;
 
     static_assert( demo_of_can_apply_ptr<int*>, "");
     static_assert(!demo_of_can_apply_ptr<int >, "");
