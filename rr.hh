@@ -140,6 +140,12 @@ namespace rr_utils {
     }
 
     using impl__is_invokable:: is_invokable;  // to 'export' this to the rr_utils namespace
+
+    namespace testing_namespace {
+        auto checker_for__has_size_method = [](auto&&x)->decltype(void(  x.size()  )){};
+        static_assert( rr_utils:: is_invokable<decltype(checker_for__has_size_method), std::vector<int> >() ,"");
+        static_assert(!rr_utils:: is_invokable<decltype(checker_for__has_size_method), int              >() ,"");
+    }
 }
 
 namespace rr {
