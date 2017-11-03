@@ -56,4 +56,7 @@ int main () {
         }
     }
 
+    constexpr auto t = ints(5) | accumulate;
+    PP(t);
+
 }

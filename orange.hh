@@ -254,7 +254,7 @@ namespace orange {
 
     // just one overload for 'empty'
     template<typename R>
-    auto
+    auto constexpr
     empty  (R const &r)
     ->decltype(traits<R>::empty(r))
     { return traits<R>::empty(r); }
@@ -264,23 +264,27 @@ namespace orange {
     template<typename R , std::enable_if_t<
         has_trait_front_val<R>
     > * = nullptr >
-    auto front_val  (R const &r)
+    auto constexpr
+    front_val  (R const &r)
     ->decltype(auto) { return traits<R>::front_val(r); }
     template<typename R , std::enable_if_t<
         !has_trait_front_val<R> && has_trait_front_ref<R>
     > * = nullptr >
-    auto front_val  (R const &r)
+    auto constexpr
+    front_val  (R const &r)
     ->decltype(auto) { return traits<R>::front_ref(r); }
 
     // one overload for 'front_ref'
     template<typename R>
-    auto front_ref  (R && r)
+    auto constexpr
+    front_ref  (R && r)
     ->decltype(traits<R>::front_ref(r)) {
         return traits<R>::front_ref(r); }
 
     // one overload for 'advance'
     template<typename R>
-    auto advance    (R       &r)
+    auto constexpr
+    advance    (R       &r)
     ->decltype(traits<R>::advance(r)) {
         return traits<R>::advance(r); }
 
@@ -294,13 +298,15 @@ namespace orange {
 
     // one overload for 'begin'
     template<typename R>
-    auto begin      (R       &r)
+    auto constexpr
+    begin      (R       &r)
     ->decltype(traits<R>::begin  (r)) {
         return traits<R>::begin  (r); }
 
     // one overload for 'end'
     template<typename R>
-    auto end        (R       &r)
+    auto constexpr
+    end        (R       &r)
     ->decltype(traits<R>::end    (r)) {
         return traits<R>::end    (r); }
 
@@ -310,19 +316,22 @@ namespace orange {
      *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
      */
     template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
-    auto pull       (R       &r)
+    auto constexpr
+    pull       (R       &r)
     { return traits<R>::pull     (r); }
     template<typename R , std::enable_if_t<
         !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance<R>
     >* =nullptr>
-    auto pull       (R       &r) {
+    auto constexpr
+    pull       (R       &r) {
         auto copy = traits<R>::front_val(r);
         traits<R>::advance(r);
         return copy; }
     template<typename R , std::enable_if_t<
         !has_trait_pull <R> && !has_trait_front_val<R> && has_trait_front_ref<R> && has_trait_advance<R>
     >* =nullptr>
-    auto pull       (R       &r) {
+    auto constexpr
+    pull       (R       &r) {
         auto copy = traits<R>::front_ref(r);
         traits<R>::advance(r);
         return copy; }
@@ -393,8 +402,10 @@ namespace orange {
     };
 
     inline
+    constexpr
     pair_of_values<int> ints(int u) { return {0,u}; }
     inline
+    constexpr
     pair_of_values<int> ints(int l, int u) { return {l,u}; }
 
     /*
@@ -470,6 +481,8 @@ namespace orange {
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
     struct collect_tag_t{constexpr collect_tag_t(){}};
                                         constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
+    struct accumulate_tag_t{constexpr accumulate_tag_t(){}};
+                                        constexpr            accumulate_tag_t       accumulate;    // no need for 'tagger_t', this directly runs
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
@@ -597,6 +610,24 @@ namespace orange {
         return as_range(std::forward<R>(r)) | orange:: collect;
     }
 
+    template<typename R
+        , std::enable_if_t< is_range_v<R> > * = nullptr
+        >
+    constexpr
+    auto operator| (R r, accumulate_tag_t) {
+        static_assert(!std::is_reference<R>{},"");
+        static_assert( is_range_v<R> ,"");
+
+        using value_type = std::remove_reference_t<decltype(orange::pull(r))>;
+        value_type total = 0;
+
+        while(!orange::empty(r)) {
+            total += orange::pull(r);
+        }
+
+        return total;
+    }
+
     // |take_collect
     template<typename R>
     auto operator| (imperfect_forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
@@ -614,5 +645,9 @@ namespace orange {
         }
 
         return res;
+    }
+
+    namespace testing_namespace {
+        static_assert( 10 ==  (ints(5) | accumulate)  ,"");
     }
 } // namespace orange
