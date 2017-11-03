@@ -507,7 +507,8 @@ namespace orange {
     template<typename R, typename Tag_type
         , std::enable_if_t< is_range_v<R> > * = nullptr // if 'r' is a range
         >
-    auto operator| (R r, tagger_t<Tag_type>) {
+    auto constexpr
+    operator| (R r, tagger_t<Tag_type>) {
         static_assert( is_range_v<R> ,"");
         return forward_this_with_a_tag<R, Tag_type>    {   std::move(r)  };
     }
@@ -515,7 +516,8 @@ namespace orange {
         , typename Rnonref = std::remove_reference_t<R>
         , std::enable_if_t<!is_range_v<Rnonref> > * = nullptr // if 'nr' is a not a range
         >
-    auto operator| (R && nr, tagger_t<Tag_type> tag)
+    auto constexpr
+    operator| (R && nr, tagger_t<Tag_type> tag)
     ->decltype(as_range(std::forward<R>(nr)) | tag)
     {
         return as_range(std::forward<R>(nr)) | tag;
@@ -547,17 +549,18 @@ namespace orange {
     struct traits<mapping_range<under_R,F>> {
         using R = mapping_range<under_R,F>;
         using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
-        static
+        static constexpr
         bool empty      (R const &r) { return orange:: empty(r.m_r);}
-        static
+        static constexpr
         void advance    (R       &r) { orange::advance( r.m_r ) ;}
-        static
+        static constexpr
         auto front_val      (R const &r) { return r.m_f(orange::front_val  ( r.m_r )) ;}
     };
 
     // |mapr| or |map_range|
     template<typename R, typename Func>
-    auto operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
+    auto constexpr
+    operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
                             > { std::move         (f.m_r)
@@ -567,7 +570,8 @@ namespace orange {
 
     // |collect|
     template<typename R, typename Func>
-    auto operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
+    auto constexpr
+    operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
 
         static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
@@ -585,7 +589,8 @@ namespace orange {
         , typename Rnonref = std::remove_reference_t<R>
         , std::enable_if_t< is_range_v<Rnonref> > * = nullptr
         >
-    auto operator| (R r, collect_tag_t) {
+    auto constexpr
+    operator| (R r, collect_tag_t) {
         static_assert( is_range_v<R> ,"");
         using value_type = decltype (   orange::front_val( r )  );
         std:: vector<value_type> res;
@@ -601,7 +606,8 @@ namespace orange {
     template<typename R
         , typename Rnonref = std::remove_reference_t<R>
         , std::enable_if_t< !is_range_v<Rnonref> > * = nullptr >
-    auto operator| (R && r, collect_tag_t) {
+    auto constexpr
+    operator| (R && r, collect_tag_t) {
         return as_range(std::forward<R>(r)) | orange:: collect;
     }
 
@@ -609,8 +615,8 @@ namespace orange {
     template<typename R
         , std::enable_if_t< is_range_v<R> > * = nullptr
         >
-    constexpr
-    auto operator| (R r, accumulate_tag_t) {
+    auto constexpr
+    operator| (R r, accumulate_tag_t) {
         static_assert(!std::is_reference<R>{},"");
         static_assert( is_range_v<R> ,"");
 
@@ -626,7 +632,8 @@ namespace orange {
 
     // |take_collect
     template<typename R>
-    auto operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
+    auto constexpr
+    operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
 
         static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
