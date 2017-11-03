@@ -182,32 +182,39 @@ namespace orange {
 
     auto checker_for__is_range=[](auto&&x)->decltype(void(  traits< std::remove_reference_t<decltype(x)>>{}  )){};
 
-    template<typename Possible_Range >
+    template<typename T >
     constexpr bool
-    is_range_v = rr_utils:: is_invokable_v<decltype(checker_for__is_range), Possible_Range>;
+    is_range_v = rr_utils:: is_invokable_v<decltype(checker_for__is_range), T>;
 
-    // Let's start with the simplest example - and std::pair of iterators
-    template<typename I>
-    struct traits<std:: pair<I,I>> {
-        using R = std:: pair<I,I>;
+    // Let's start with the simplest example - a std::pair of iterators
+    template<typename I, typename J>
+    struct traits<std:: pair<I,J>> {
+        using R = std:: pair<I,J>;
         using value_type = std::remove_reference_t<decltype( *std::declval<I>() )>;
-        static_assert(!std::is_reference<value_type>{}, "");
-        static
-        bool empty      (R const &r) {
-            return r.first == r.second ;}
-        static
-        void advance    (R       &r) {
-                ++ r.first  ;}
-        static
-        value_type front_val      (R const &r) {
-            return *r.first ;}
-        template<typename RR>
-        static
-        value_type & front_ref      (RR && r) {
-            return * std::forward<RR>(r) .first ;}
+
+        template<typename RR> static constexpr
+        bool empty      (RR && r) { return r.first == r.second ;}
+
+        template<typename RR> static
+        void advance    (RR && r) { ++ r.first  ;}
+
+        template<typename RR> static constexpr
+        value_type front_val      (RR && r) { return *r.first ;}
+
+        template<typename RR> static constexpr
+        decltype(auto) front_ref      (RR && r) { return * std::forward<RR>(r) .first ;}
     };
-    static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
-    static_assert(is_range_v< std::pair<int*, int*> >, "");
+
+    namespace testing_namespace {
+        static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
+        static_assert(is_range_v< std::pair<int*, int*> >, "");
+    }
+
+    /*
+     * In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
+     * for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
+     * These are the 'has_trait_*' functions defined here:
+     */
 
     auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){};
     auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::advance  (r) )){};
@@ -230,6 +237,7 @@ namespace orange {
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
     static_assert( has_trait_front_val< std::pair<int*, int*> > , "");
     static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
+    static_assert(!has_trait_front_ref< std::vector<int> > , "");
 
 
     /*
@@ -248,10 +256,20 @@ namespace orange {
     auto empty  (R const &r)
     ->decltype(traits<R>::empty(r)) {
         return traits<R>::empty(r); }
-    template<typename R>
+
+    // two overloads for 'front_val', as we can use 'front_ref'
+    // instead if it's present.
+    template<typename R , std::enable_if_t<
+        has_trait_front_val<R>
+    > * = nullptr >
     auto front_val  (R const &r)
-    ->decltype(traits<R>::front_val(r)) {
-        return traits<R>::front_val(r); }
+    ->decltype(auto) { return traits<R>::front_val(r); }
+    template<typename R , std::enable_if_t<
+        !has_trait_front_val<R> && has_trait_front_ref<R>
+    > * = nullptr >
+    auto front_val  (R const &r)
+    ->decltype(auto) { return traits<R>::front_ref(r); }
+
     template<typename R>
     auto front_ref  (R && r)
     ->decltype(traits<R>::front_ref(r)) {
@@ -273,10 +291,17 @@ namespace orange {
     auto pull       (R       &r)
     { return traits<R>::pull     (r); }
     template<typename R , std::enable_if_t<
-        !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance  <R>
+        !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance<R>
     >* =nullptr>
     auto pull       (R       &r) {
         auto copy = traits<R>::front_val(r);
+        traits<R>::advance(r);
+        return copy; }
+    template<typename R , std::enable_if_t<
+        !has_trait_pull <R> && !has_trait_front_val<R> && has_trait_front_ref<R> && has_trait_advance<R>
+    >* =nullptr>
+    auto pull       (R       &r) {
+        auto copy = traits<R>::front_ref(r);
         traits<R>::advance(r);
         return copy; }
 
@@ -373,15 +398,15 @@ namespace orange {
     struct traits<pair_of_iterators<B,E>> {
         using R = pair_of_iterators<B,E>;
         using value_type = typename B:: value_type;
+
         static
         bool empty      (R const &r) {
             return r.first == r.second ;}
+
         static
         void advance    (R       &r) {
                 ++ r.first  ;}
-        static
-        value_type front_val      (R const &r) {
-            return *r.first ;}
+
         template<typename RR>
         static
         decltype(auto) front_ref      (RR && r) {
