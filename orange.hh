@@ -455,6 +455,51 @@ namespace orange {
         auto end        (R & r)   { return r.second; }
     };
 
+    template<typename C>
+    struct owning_range { // non-copyable
+        static_assert(!std::is_reference<C>{}   ,"");
+        static_assert(!is_range_v<C>            ,"");
+
+        using R = decltype( as_range(std::declval<C&>()) );
+        static_assert(!std::is_reference<R>{} ,"");
+        static_assert( is_range_v<R>            ,"");
+
+        C m_c;
+        R m_r;
+
+
+        constexpr
+        owning_range    (C && c)
+        : m_c(std::move(c)) , m_r( as_range(m_c) )
+        {}
+
+        // don't allow this to be copied
+        owning_range    (owning_range const &) = delete;
+        owning_range &  operator=  (owning_range const &) = delete;
+
+        // ... but allow moving
+        constexpr
+        owning_range    (owning_range      &&) = default;
+        constexpr
+        owning_range &  operator=  (owning_range      &&) = default;
+    };
+
+    template<typename T>
+    struct traits< owning_range<T> > {
+        template<typename R> static constexpr
+        bool empty      (R &  r)   { return orange::empty(r.m_r) ;}
+        template<typename R> static constexpr
+        auto pull       (R &  r)   { return orange::pull (r.m_r) ;}
+    };
+    template <typename T
+        , std::enable_if_t< !std::is_reference<T>{} > * = nullptr
+        >
+    auto constexpr
+    as_range(T &&t)
+    {
+        return owning_range<T>{ std::forward<T>(t) };
+    }
+
     /*
      * Above, all the basic underlying technology for a range has
      * been defined. Now, the 'user-facing' code must be implemented,
