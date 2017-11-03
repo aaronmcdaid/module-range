@@ -73,7 +73,9 @@ namespace rr_utils {
         { return {}; }
     }
 
-    template<typename T> T declVal(); // better than std:: declval, because it complains less about being called!
+    template<typename T>
+    T declVal() // better than std:: declval, because it complains less about being called!
+    { struct wrap { T t; }; return ((wrap*)nullptr) -> t; }
 
     template<typename ... Ts> constexpr auto
     can_apply_ptr(Ts && ... ts)

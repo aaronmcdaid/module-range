@@ -112,30 +112,12 @@ namespace rr {
     template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
     struct traits;
 
-    namespace impl {
-        template<typename Possible_Range
-            , typename = decltype(traits< std::remove_reference_t<Possible_Range> > {})
-            >
-        auto has_range_trait(rr_utils:: priority_tag<2>, Possible_Range &&)
-        -> std:: true_type
-        { return {}; }
-
-        template<typename Possible_Range>
-        auto has_range_trait(rr_utils:: priority_tag<1>, Possible_Range &&)
-        -> std:: false_type
-        { return {}; }
-
-        template<typename Possible_Range>
-        constexpr
-        bool has_range_trait()
-        {
-            static_assert(!std::is_reference<Possible_Range>{} ,"");
-            using return_type = decltype(impl:: has_range_trait(rr_utils:: priority_tag<9>{}, std::declval<Possible_Range>()));
-            return return_type:: value;
-        }
-    }
-    template<typename Possible_Range>
-    constexpr bool is_range_v = impl:: has_range_trait<Possible_Range>();
+    template<typename Possible_Range >
+    constexpr
+    bool is_range_v =(true?nullptr:rr_utils::can_apply_ptr(
+                [](auto x)-> decltype(traits<decltype(x)>{})* {return nullptr;}
+                , rr_utils::declVal< std::remove_reference_t<Possible_Range> >()
+        ))->value;
 
     // Let's start with the simplest example - and std::pair of iterators
     template<typename I>
