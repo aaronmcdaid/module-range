@@ -417,13 +417,13 @@ namespace orange {
      * forwards it as-is.
      */
     template <typename T>
-    auto
+    auto constexpr
     as_range(T &v)
     -> pair_of_iterators<   decltype(v.begin()) ,   decltype(v.end  ()) >
     { return {v.begin(),v.end()}; }
 
     template <typename T>
-    auto
+    auto constexpr
     as_range(T b, T e)
     ->decltype(pair_of_iterators<   decltype(b) ,   decltype(e) >   {b,e})
     { return {b,e}; }
@@ -638,5 +638,7 @@ namespace orange {
 
     namespace testing_namespace {
         static_assert( 10 ==  (ints(5) | accumulate)  ,"");
+        constexpr double x[] = {1.0, 2.7, 3.14};
+        static_assert(1.0 + 2.7 + 3.14 == (as_range(std::begin(x), std::end(x)) | accumulate) ,"");
     }
 } // namespace orange
