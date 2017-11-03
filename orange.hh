@@ -486,13 +486,9 @@ namespace orange {
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
     template<typename R, typename Tag_type>
-    struct imperfect_forward_this_with_a_tag {
-        R m_r; /* may be lvalue or value, but *not* rvalue, as the temporary
-                * will soon be destroyed. e.g. The as_range object made from
-                * 'v' in this code will be destroyed quickly:
-                *           v |mapr| [](auto){}
-                */
-        static_assert(!std:: is_rvalue_reference<R>{}, ""); // lvalue or rvalue, but not value
+    struct forward_this_with_a_tag {
+        R m_r;
+        static_assert(!std:: is_reference<R>{}, ""); // lvalue or rvalue, but not value
         static_assert( is_range_v< std::remove_reference_t<R> >, "");
     };
 
@@ -503,21 +499,20 @@ namespace orange {
     // where 'x' is a range (or is convertible to a range via 'as_range' and
     // 'oper' is one of {foreach,map_range,mapr,map_collect,collect,take_collec}
     template<typename R, typename Tag_type
-        , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t< is_range_v<Rnonref> > * = nullptr // if 'x' is a range
+        , std::enable_if_t< is_range_v<R> > * = nullptr // if 'r' is a range
         >
-    auto operator| (R && r, tagger_t<Tag_type>) {
-        static_assert( is_range_v<R> ,""); // TODO: make sure I can break this with an lvalue!
-        return imperfect_forward_this_with_a_tag<R, Tag_type>    {   std::forward<R>(r)  };
+    auto operator| (R r, tagger_t<Tag_type>) {
+        static_assert( is_range_v<R> ,"");
+        return forward_this_with_a_tag<R, Tag_type>    {   std::move(r)  };
     }
     template<typename R, typename Tag_type
         , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t<!is_range_v<Rnonref> > * = nullptr // if 'x' is a not a range
+        , std::enable_if_t<!is_range_v<Rnonref> > * = nullptr // if 'nr' is a not a range
         >
-    auto operator| (R && r, tagger_t<Tag_type> tag)
-    ->decltype(as_range(std::forward<R>(r)) | tag)
+    auto operator| (R && nr, tagger_t<Tag_type> tag)
+    ->decltype(as_range(std::forward<R>(nr)) | tag)
     {
-        return as_range(std::forward<R>(r)) | tag;
+        return as_range(std::forward<R>(nr)) | tag;
     }
 
     /*
@@ -556,27 +551,25 @@ namespace orange {
 
     // |mapr| or |map_range|
     template<typename R, typename Func>
-    auto operator| (imperfect_forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
+    auto operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
-                            > { std::forward<R   >(f.m_r)
+                            > { std::move         (f.m_r)
                               , std::forward<Func>(func)
                               };
     }
 
     // |collect|
     template<typename R, typename Func>
-    auto operator| (imperfect_forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
+    auto operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
 
-        auto r = std::forward<R   >(f.m_r); // copy/move the range here
-        static_assert(!std::is_reference<decltype(r)>{}, "");
+        static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
-        using value_type = decltype (   func   (  orange::front_val( r )  ));
+        using value_type = decltype (   func   (  orange::front_val( f.m_r )  ));
         std:: vector<value_type> res;
 
-        while(!orange::empty(r)) {
-            res.push_back( func(orange::front_val(r)));
-            orange::advance(r);
+        while(!orange::empty(f.m_r)) {
+            res.push_back( func(orange::pull(f.m_r)));
         }
 
         return res;
@@ -586,17 +579,13 @@ namespace orange {
         , typename Rnonref = std::remove_reference_t<R>
         , std::enable_if_t< is_range_v<Rnonref> > * = nullptr
         >
-    auto operator| (R && r, collect_tag_t) {
-        // should I copy 'r' in here?
-        // Or, adjust the other functions to work directly on
-        // the 'r' or 'f.m_r' that has been passed in?
+    auto operator| (R r, collect_tag_t) {
         static_assert( is_range_v<R> ,"");
         using value_type = decltype (   orange::front_val( r )  );
         std:: vector<value_type> res;
 
         while(!orange::empty(r)) {
-            res.push_back( orange::front_val(r) );
-            orange::advance(r);
+            res.push_back( orange::pull(r) );
         }
 
         return res;
@@ -610,6 +599,7 @@ namespace orange {
         return as_range(std::forward<R>(r)) | orange:: collect;
     }
 
+    //  |accumulate
     template<typename R
         , std::enable_if_t< is_range_v<R> > * = nullptr
         >
@@ -630,17 +620,16 @@ namespace orange {
 
     // |take_collect
     template<typename R>
-    auto operator| (imperfect_forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
+    auto operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
 
-        auto r = std::forward<R   >(f.m_r); // copy/move the range here
-        static_assert(!std::is_reference<decltype(r)>{}, "");
+        static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
-        using value_type = decltype (   orange::front_val( r )  );
+        using value_type = decltype (   orange::front_val( f.m_r )  );
         std:: vector<value_type> res;
 
-        while(!orange::empty(r) && how_many>0) {
-            res.push_back( orange::front_val(r));
-            orange::advance(r);
+        while(!orange::empty(f.m_r) && how_many>0) {
+            res.push_back( orange::front_val(f.m_r));
+            orange::advance(f.m_r);
             --how_many;
         }
 
