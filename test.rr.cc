@@ -42,6 +42,8 @@ int main () {
     auto collected = v |map_collect|[](auto && x) { return 0.5+x.length(); };
     auto recollected = collected |map_range|[](auto && x){return -x;} |collect;
     PP(collected, recollected);
+    rr::front_ref(as_range(collected)) += 100;
+    PP(collected);
 
     { // test pull
         auto p = std::make_pair(collected.begin(), collected.end());
