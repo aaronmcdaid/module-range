@@ -5,8 +5,6 @@
 #include<utility>
 #include<vector>
 
-#include"rr.utils.hh" // a number of useful things, not really range-specific
-
 /*
  * Brief description, and overview of this code
  * ============================================
@@ -107,6 +105,42 @@
  * front_val where the traits has 'front_ref', but not 'front_val'.
  *
  */
+
+namespace rr_utils {
+    /*  'priority_tag' is very useful to specify priority
+     *  among overloads that would otherwise be ambiguous.
+     *  https://stackoverflow.com/questions/43470741/how-does-eric-nieblers-implementation-of-stdis-function-work
+     */
+    template<int i>
+    struct priority_tag;
+    template<int i>
+    struct priority_tag : public priority_tag<i-1> {};
+    template<>
+    struct priority_tag<0> {};
+
+    namespace impl__is_invokable {
+        template<typename F, typename ... Args>
+        constexpr auto
+        is_invokable_one_overload(rr_utils::priority_tag<2>)
+        -> decltype( std::declval<F>()(std::declval<Args>()...), true )
+        { return true; }
+
+        template<typename F, typename ... Args>
+        constexpr auto
+        is_invokable_one_overload(rr_utils::priority_tag<1>)
+        -> decltype( false )
+        { return false; }
+
+        template<typename F, typename ... Args>
+        constexpr bool
+        is_invokable()
+        {
+            return is_invokable_one_overload<F, Args...>(rr_utils::priority_tag<9>{});
+        }
+    }
+
+    using impl__is_invokable:: is_invokable;  // to 'export' this to the rr_utils namespace
+}
 
 namespace rr {
     template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t

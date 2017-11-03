@@ -56,9 +56,4 @@ int main () {
         }
     }
 
-    auto overloaded = rr_utils::overload_first(   [](std::string s) { return s.length(); }
-                                    ,   [](std::vector<int> v) { return v.size();   }    );
-    PP(overloaded( "hi" ));
-    PP(overloaded( std::vector<int>{1,2,3} ));
-
 }
