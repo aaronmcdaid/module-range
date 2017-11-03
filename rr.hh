@@ -112,13 +112,11 @@ namespace rr {
     template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
     struct traits;
 
+    auto checker_for__is_range=[](auto&&x)->decltype(sizeof(  traits< std::remove_reference_t<decltype(x)>>{}  )){return{};};
+
     template<typename Possible_Range >
-    constexpr
-    bool is_range_v =   (true?nullptr:rr_utils::can_apply_ptr([](auto x)-> decltype(sizeof(
-                                    traits<decltype(x)>{}    // test if this expression is valid ...
-                        )) {return 0;} ,
-                                    rr_utils::declval< std::remove_reference_t<Possible_Range> >() // ... when x has this type
-                        ))->value;
+    constexpr bool
+    is_range_v = rr_utils:: is_invokable<decltype(checker_for__is_range), Possible_Range>();
 
     // Let's start with the simplest example - and std::pair of iterators
     template<typename I>
