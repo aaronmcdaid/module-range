@@ -5,7 +5,7 @@
 #include<vector>
 using std:: vector;
 using std:: string;
-using namespace rr;
+using namespace orange;
 using utils:: operator<<;
 int main () {
     auto r_i = ints(3);
@@ -19,8 +19,8 @@ int main () {
 
     vector<string> v{"hi", "world", "of", "ranges"};
     auto v_r = as_range(v);
-    static_assert(                                      rr:: is_range_v< decltype(v_r) >    , "");
-    static_assert(                                    ! rr:: is_range_v< decltype(v  ) >    , "");
+    static_assert(                                      orange:: is_range_v< decltype(v_r) >    , "");
+    static_assert(                                    ! orange:: is_range_v< decltype(v  ) >    , "");
     while(!empty(v_r)) {
         PP(front_val(v_r));
         advance(v_r);
@@ -42,7 +42,7 @@ int main () {
     auto collected = v |map_collect|[](auto && x) { return 0.5+x.length(); };
     auto recollected = collected |map_range|[](auto && x){return -x;} |collect;
     PP(collected, recollected);
-    rr::front_ref(as_range(collected)) += 100;
+    orange::front_ref(as_range(collected)) += 100;
     PP(collected);
 
     { // test pull

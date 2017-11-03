@@ -1,6 +1,6 @@
 /*
- * Aaron McDaid - redoing my range library. Calling it rr.hh for now
- * with namespace 'rr'
+ * Aaron McDaid - redoing my range library. Calling it orange.hh for now
+ * with namespace 'orange'
  */
 #include<utility>
 #include<vector>
@@ -56,10 +56,10 @@
  *
  * Via traits (see below), you can specify, for your own types, how these
  * actions are to be performed on your objects.
- * These names are all available in the rr:: namespace. They will use
+ * These names are all available in the orange:: namespace. They will use
  * the underlying traits actions where they are provided and, in some cases,
  * this library can synethesize extra functions where they are not explicit
- * in your trait; for example, we can synthesize 'rr::pull' from 'front_val'
+ * in your trait; for example, we can synthesize 'orange::pull' from 'front_val'
  * and 'advance' if your trait does not contain 'advance'
  *
  * This becomes useful when you want to combine a range and a function,
@@ -71,7 +71,7 @@
  * A 'range type', R, here is a type for which the type traits<R> exists.
  * More precisely, traits<R> can also be default constructed. The traits
  * object has no state, its purpose is simply to record the type-specific
- * details. For example, an input range must be able to support the 'rr::empty'
+ * details. For example, an input range must be able to support the 'orange::empty'
  * function which tells us if more input is available. For a pair of iterators,
  * this means testing the two iterators to see if they are equal. For a file
  * input stream, we test the stream for end-of-file.
@@ -93,15 +93,15 @@
  * In future, some functions for trait a pair as an output range should
  * be added, such as 'full' and 'front_ref'.
  *
- * Next, the functions in 'rr::' are defined, relying on the operations
- * provided in the traits object. For example, this defines 'rr::front_val':
+ * Next, the functions in 'orange::' are defined, relying on the operations
+ * provided in the traits object. For example, this defines 'orange::front_val':
  *
  *  template<typename R>
  *  auto front_val  (R const &r)
  *  ->decltype(traits<R>::front_val(r)) {
  *      return traits<R>::front_val(r); }
  *
- * Another overload of 'rr::front_val' could be provided to synthesize
+ * Another overload of 'orange::front_val' could be provided to synthesize
  * front_val where the traits has 'front_ref', but not 'front_val'.
  *
  */
@@ -148,7 +148,7 @@ namespace rr_utils {
     }
 }
 
-namespace rr {
+namespace orange {
     template<typename R, typename = void> // second arg is in case I want to use 'void_t' with some traits. http://en.cppreference.com/w/cpp/types/void_t
     struct traits;
 
@@ -207,11 +207,11 @@ namespace rr {
     /*
      * Users will never call the functions in the trait object directly.
      * Instead, we synthesize all the functions, where possible, such
-     * as rr:empty, rr::front_val, rr::advance.
+     * as orange:empty, orange::front_val, orange::advance.
      *
      * This design allows us to synthesize extra functions. For example,
      * if a trait has 'front' and 'advance', but not 'pull', then we
-     * are still able to synthesize 'rr::pull' using the first two.
+     * are still able to synthesize 'orange::pull' using the first two.
      * This allows each trait to focus on the smallest subset of
      * necessary behaviour.
      */
@@ -253,7 +253,7 @@ namespace rr {
         return copy; }
 
     /*
-     * Next, a 'pair_of_iterators' type in the rr:: namespace. The main (only?)
+     * Next, a 'pair_of_iterators' type in the orange:: namespace. The main (only?)
      * reason for this is to allow 'begin' and 'end' to be defined appropriately,
      * allowing  for(auto x : r) to work.
      * This is the class used when applying thing like |
@@ -266,7 +266,7 @@ namespace rr {
         static_assert(!std::is_reference<E>{}, "");
         pair_of_iterators(B b, E e) : std::pair<B,E>(b,e) {}
         /* This struct looks pointless, but it's not.
-         * This struct, because it's in the rr:: namespace,
+         * This struct, because it's in the orange:: namespace,
          * can be found by ADL and therefore our begin/end are found easily
          *
          * The main place you see this is in the return from as_range()
@@ -457,13 +457,13 @@ namespace rr {
     template<typename under_R, typename F>
     struct traits<mapping_range<under_R,F>> {
         using R = mapping_range<under_R,F>;
-        using value_type = decltype( rr::front_val  ( std::declval<R>().m_r ));
+        using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
         static
-        bool empty      (R const &r) { return rr:: empty(r.m_r);}
+        bool empty      (R const &r) { return orange:: empty(r.m_r);}
         static
-        void advance    (R       &r) { rr::advance( r.m_r ) ;}
+        void advance    (R       &r) { orange::advance( r.m_r ) ;}
         static
-        auto front_val      (R const &r) { return r.m_f(rr::front_val  ( r.m_r )) ;}
+        auto front_val      (R const &r) { return r.m_f(orange::front_val  ( r.m_r )) ;}
     };
 
     // |mapr| or |map_range|
@@ -483,12 +483,12 @@ namespace rr {
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
         static_assert(!std::is_reference<decltype(r)>{}, "");
 
-        using value_type = decltype (   func   (  rr::front_val( r )  ));
+        using value_type = decltype (   func   (  orange::front_val( r )  ));
         std:: vector<value_type> res;
 
-        while(!rr::empty(r)) {
-            res.push_back( func(rr::front_val(r)));
-            rr::advance(r);
+        while(!orange::empty(r)) {
+            res.push_back( func(orange::front_val(r)));
+            orange::advance(r);
         }
 
         return res;
@@ -503,12 +503,12 @@ namespace rr {
         // Or, adjust the other functions to work directly on
         // the 'r' or 'f.m_r' that has been passed in?
         static_assert( is_range_v<R> ,"");
-        using value_type = decltype (   rr::front_val( r )  );
+        using value_type = decltype (   orange::front_val( r )  );
         std:: vector<value_type> res;
 
-        while(!rr::empty(r)) {
-            res.push_back( rr::front_val(r) );
-            rr::advance(r);
+        while(!orange::empty(r)) {
+            res.push_back( orange::front_val(r) );
+            orange::advance(r);
         }
 
         return res;
@@ -519,7 +519,7 @@ namespace rr {
         , typename Rnonref = std::remove_reference_t<R>
         , std::enable_if_t< !is_range_v<Rnonref> > * = nullptr >
     auto operator| (R && r, collect_tag_t) {
-        return as_range(std::forward<R>(r)) | rr:: collect;
+        return as_range(std::forward<R>(r)) | orange:: collect;
     }
 
     // |take_collect
@@ -529,12 +529,12 @@ namespace rr {
         auto r = std::forward<R   >(f.m_r); // copy/move the range here
         static_assert(!std::is_reference<decltype(r)>{}, "");
 
-        using value_type = decltype (   rr::front_val( r )  );
+        using value_type = decltype (   orange::front_val( r )  );
         std:: vector<value_type> res;
 
-        while(!rr::empty(r) && how_many>0) {
-            res.push_back( rr::front_val(r));
-            rr::advance(r);
+        while(!orange::empty(r) && how_many>0) {
+            res.push_back( orange::front_val(r));
+            orange::advance(r);
             --how_many;
         }
 
@@ -542,4 +542,4 @@ namespace rr {
     }
 #if 0
 #endif
-} // namespace rr
+} // namespace orange
