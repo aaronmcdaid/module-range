@@ -133,6 +133,10 @@ namespace rr {
         static
         value_type front_val      (R const &r) {
             return *r.first ;}
+        template<typename RR>
+        static
+        value_type & front_ref      (RR && r) {
+            return * std::forward<RR>(r) .first ;}
     };
     static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
     static_assert(is_range_v< std::pair<int*, int*> >, "");
@@ -140,6 +144,7 @@ namespace rr {
     auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){};
     auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::advance  (r) )){};
     auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::front_val(r) )){};
+    auto checker_for__has_trait_front_ref   = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::front_ref(r) )){};
     auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){};
 
     template<typename R> constexpr bool
@@ -149,11 +154,14 @@ namespace rr {
     template<typename R> constexpr bool
     has_trait_front_val = rr_utils:: is_invokable<decltype(checker_for__has_trait_front_val), R>();
     template<typename R> constexpr bool
+    has_trait_front_ref = rr_utils:: is_invokable<decltype(checker_for__has_trait_front_ref), R>();
+    template<typename R> constexpr bool
     has_trait_pull      = rr_utils:: is_invokable<decltype(checker_for__has_trait_pull), R>();
 
 
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
     static_assert( has_trait_front_val< std::pair<int*, int*> > , "");
+    static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
 
 
     /*
@@ -176,6 +184,10 @@ namespace rr {
     auto front_val  (R const &r)
     ->decltype(traits<R>::front_val(r)) {
         return traits<R>::front_val(r); }
+    template<typename R>
+    auto front_ref  (R && r)
+    ->decltype(traits<R>::front_ref(r)) {
+        return traits<R>::front_ref(r); }
     template<typename R>
     auto advance    (R       &r)
     ->decltype(traits<R>::advance(r)) {
@@ -302,6 +314,10 @@ namespace rr {
         static
         value_type front_val      (R const &r) {
             return *r.first ;}
+        template<typename RR>
+        static
+        decltype(auto) front_ref      (RR && r) {
+            return * std::forward<RR>(r) .first ;}
         static
         auto begin      (R       &r) { return r.first; }
         static
