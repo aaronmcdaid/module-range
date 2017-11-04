@@ -281,7 +281,7 @@ namespace orange {
     // just one overload for 'empty'
     template<typename R>
     auto constexpr
-    empty  (R const &r)
+    empty  (R &r)
     ->decltype(lookup_traits<R>::empty(r))
     { return lookup_traits<R>::empty(r); }
 
