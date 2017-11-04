@@ -174,6 +174,8 @@ namespace rr_utils {
         static_assert( has_size_method< std::vector<int> > ,"");
         static_assert(!has_size_method< int              > ,"");
     }
+
+    template< class ... > using void_t = void; // void_t : https://stackoverflow.com/questions/27687389/how-does-void-t-work
 }
 
 namespace orange {
