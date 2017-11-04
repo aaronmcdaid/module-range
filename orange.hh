@@ -655,38 +655,35 @@ namespace orange {
     }
 
     template<typename R, typename F>
-    struct filter_range {
+    struct filter_range
+    : public orange_use_the_methods
+    {
         static_assert(!std::is_reference<R>{},"");
         static_assert(!std::is_reference<F>{},"");
         static_assert( is_range_v<R>, "");
+
         R m_r;
         F m_f;
+
         constexpr
         void
         skip_if_necessary() {
-            while(!orange::empty(m_r) && !m_f(orange::front_val(m_r))) {
-                orange::advance(m_r);
-            }
+            while(!orange::empty(m_r) && !m_f(orange::front_val(m_r)))
+            { orange::advance(m_r); }
         }
 
         template<typename RR, typename FF>
         constexpr
         filter_range(RR && r, FF && f)
-        : m_r(std::forward<RR>(r))
-        , m_f(std::forward<FF>(f))
+        : m_r(std::forward<RR>(r)) , m_f(std::forward<FF>(f))
         { skip_if_necessary(); }
-    };
 
-    template<typename under_R, typename F>
-    struct traits<filter_range<under_R,F>> {
-        using R = filter_range<under_R,F>;
-        using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
-        static constexpr
-        bool empty      (R const &r) { return orange:: empty(r.m_r);}
-        static constexpr
-        void advance    (R       &r) { orange::advance( r.m_r ); r.skip_if_necessary() ;}
-        static constexpr
-        auto front_val  (R const &r) { return orange::front_val  ( r.m_r ) ;}
+        constexpr bool
+        empty       () const    { return orange:: empty(m_r); }
+        constexpr void
+        advance     ()          { orange::advance( m_r ); this->skip_if_necessary() ;}
+        constexpr auto
+        front_val   () const    { return orange::front_val  ( m_r ) ;}
     };
 
     // |filter|
