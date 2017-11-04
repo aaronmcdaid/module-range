@@ -648,23 +648,33 @@ namespace orange {
         owning_range    (owning_range      &&) = default;
         constexpr
         owning_range &  operator=  (owning_range      &&) = default;
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename M> static constexpr auto
+        orange_empty      (M &m) ->bool
+        { return orange:: empty(m.m_r);}
+        template<typename M> static constexpr auto
+        orange_advance    (M &m) ->void
+        { orange::advance( m.m_r ) ; }
+        template<typename M> static constexpr auto
+        orange_front_val  (M &m) ->decltype(auto)
+        { return orange::front_val( m.m_r ) ;}
     };
 
-    template<typename T>
-    struct traits< owning_range<T> > {
-        template<typename R> static constexpr
-        bool empty      (R &  r)   { return orange::empty(r.m_r) ;}
-        template<typename R> static constexpr
-        auto pull       (R &  r)   { return orange::pull (r.m_r) ;}
-    };
-    template <typename T
-        , std::enable_if_t< !std::is_reference<T>{} > * = nullptr
-        >
+    // as_range, for rvalues that aren't ranges. In this case, we wrap them
+    // up on owning_range. It's non-copyable, that's how it maintains the
+    // semantics of ranges.
+    template <typename T , std::enable_if_t<
+        !std::is_reference<T>{} && !is_range_v<T>
+    > * = nullptr >
     auto constexpr
     as_range(T &&t) // enable_if is used here, to ensure it is only an rvalue
     {
         return owning_range<T>{ std::forward<T>(t) };
     }
+
+
+
 
     /*
      * Above, all the basic underlying technology for a range has
