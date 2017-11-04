@@ -973,6 +973,29 @@ namespace orange {
             constexpr
             T   front_val ()       { return m_array[offset]; }
         };
+
+        struct dummy_int_range_with_pull_and_empty_only {
+            int m_i = 0;
+
+            using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+            template<typename M> static constexpr bool
+            orange_empty      (M &m) { return m.m_i >= 10;}
+            template<typename M> static constexpr auto
+            orange_pull       (M &m) { return m.m_i ++;}
+
+        };
+
+        constexpr void negate_me_in_place(int &x) { x = -x ; }
+
+        constexpr int foreach_testing1()
+        {
+            int x[] = {1980, 1982, 1986, 1990};
+            as_range(x) |foreach| negate_me_in_place;
+            return as_range(x) | accumulate;
+        }
+
+        static_assert( -7938 == orange:: testing_namespace:: foreach_testing1() ,"");
+
     }
     // (dropping back up a namespace temporarily, just
     // to define the trait for 'orange_over_an_array'
