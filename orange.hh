@@ -567,7 +567,8 @@ namespace orange {
     // already a range? Just return as is
     template <typename T
         , std::enable_if_t<
-            is_range_v<T> > >
+            is_range_v<T> > * = nullptr
+            >
     constexpr decltype(auto)
     as_range(T &&t)
     { return std::forward<T>(t); }
