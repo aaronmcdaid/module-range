@@ -818,6 +818,8 @@ namespace orange {
             auto empty() const { return offset >= N; }
             constexpr
             auto pull ()       { return m_array[offset++]; }
+            constexpr
+            T & front_ref ()       { return m_array[offset]; }
         };
     }
     // (dropping back up a namespace temporarily, just
@@ -829,8 +831,18 @@ namespace orange {
         decltype(auto) empty(R const & r) { return r.empty(); }
         static constexpr
         decltype(auto) pull(R & r) { return r.pull(); }
+        static constexpr
+        decltype(auto) front_ref(R & r) { return r.front_ref(); }
     };
     namespace testing_namespace{
         static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
+
+        constexpr
+        int foo() {
+            auto ooaa = orange_over_an_array<int, 3>({{10,20,30},0});
+            orange:: front_ref(ooaa) += 100;
+            return ooaa | accumulate;
+        }
+        static_assert( 160 == foo() , "");
     }
 } // namespace orange
