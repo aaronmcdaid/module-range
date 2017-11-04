@@ -175,7 +175,9 @@ namespace orange_utils {
         static_assert(!has_size_method< int              > ,"");
     }
 
-    template< class ... > using void_t = void; // void_t : https://stackoverflow.com/questions/27687389/how-does-void-t-work
+    template< typename ... >
+    struct voider_t { using type = void; };
+    template< typename ... Ts> using void_t = typename voider_t<Ts...> :: type; // void_t : https://stackoverflow.com/questions/27687389/how-does-void-t-work
 }
 
 namespace orange {
