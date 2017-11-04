@@ -745,6 +745,36 @@ namespace orange {
      * Now, to start defining the various  |operations|
      */
 
+    // |foreach|
+    // =========
+    // Two overloads, depending on whether we have 'front_ref' or not
+    template<typename R, typename Func
+        , std::enable_if_t< has_trait_front_ref<R> > * = nullptr
+        >
+    constexpr auto
+    operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
+    -> void
+    {
+        while(!orange::empty(r.m_r)) {
+            func(orange::front_ref(r.m_r));
+            orange::advance(r.m_r);
+        }
+    }
+    template<typename R, typename Func
+        , std::enable_if_t<
+        !has_trait_front_ref<R> && has_trait_pull<R>
+        > * = nullptr >
+    constexpr auto
+    operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
+    -> void
+    {
+        while(!orange::empty(r.m_r)) {
+            func(orange::pull(r.m_r));
+        }
+    }
+
+
+    // |mapr| or |map_range|
     template<typename R, typename F>
     struct mapping_range {
         static_assert(!std::is_reference<R>{},"");
@@ -762,7 +792,6 @@ namespace orange {
         orange_front_val  (M &m) { return m.m_f(orange::front_val  ( m.m_r )) ;}
     };
 
-    // |mapr| or |map_range|
     template<typename R, typename Func>
     auto constexpr
     operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
