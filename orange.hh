@@ -124,7 +124,12 @@
  * I define 'is_invokable_v' in this namespace as it's range specific and might be useful elsewhere.
  */
 namespace orange_utils {
-    /*  'priority_tag' is very useful to specify priority
+
+
+
+    /*  priority_tag
+     *  ============
+     *      'priority_tag' is very useful to specify priority
      *  among overloads that would otherwise be ambiguous.
      *  https://stackoverflow.com/questions/43470741/how-does-eric-nieblers-implementation-of-stdis-function-work
      */
@@ -135,13 +140,21 @@ namespace orange_utils {
     template<>
     struct priority_tag<0> {};
 
+
     /*  void_t
+     *  ======
      * https://stackoverflow.com/questions/27687389/how-does-void-t-work
      */
     template< typename ... >
     struct voider_t { using type = void; };
     template< typename ... Ts> using void_t = typename voider_t<Ts...> :: type;
 
+
+    /*  is_invokable_v
+     *  ==============
+     *  is_invokable_v<F, Args...> tells us if the function object F
+     *  can be called with arguments of types Args...
+     */
     namespace impl__is_invokable {
         template<typename F, typename ... Args>
         constexpr auto
@@ -163,6 +176,13 @@ namespace orange_utils {
 
     using impl__is_invokable:: is_invokable_v;  // to 'export' this to the orange_utils namespace
 
+
+    /* testing_namespace
+     * =================
+     *  Throughout this file, I'll put tests, using static_assert, into this
+     *  namespace. Reading the tests might help you to understand more of
+     *  this code.
+     */
     namespace testing_namespace {
         /*
          * To make a tester which checks if a give type has a '.size()' method, we define a lambda with the
@@ -184,48 +204,47 @@ namespace orange_utils {
 }
 
 namespace orange {
+
+
+    /*  traits<R>
+     *  =========
+     *      If 'R' is a range type, then this traits class tells us
+     *  how to use it; how to test if it's empty, for example.
+     *  With a pair of iterators, we test for emptiness by testing
+     *  if the two iterators equal to each other. With a file input
+     *  stream, we would test for emptiness by testing for .eof().
+     */
     template<typename R, typename = void> // second template arg is to allow 'void_t' https://stackoverflow.com/questions/27687389/how-does-void-t-work
     struct traits;
 
+
+    /*  lookup_traits<R>
+     *  ================
+     *      We don't look up 'traits' directly. We go through 'lookup_traits'
+     *  instead, as it drops 'const' and drops references.
+     */
     template<typename R
             , typename R_decayed = std::decay_t<R>
             , decltype( traits< R_decayed> {} ) * = nullptr >
     struct lookup_traits : public traits<R_decayed> {};
 
-    auto checker_for__is_range=[](auto&&x)->decltype(void(  lookup_traits< std::remove_reference_t<decltype(x)>>{}  )){};
 
-    template<typename T >
-    constexpr bool
+    /*  checker_for__is_range  is_range_v
+     *  =====================  ==========
+     *      is_range_v<R> tests if lookup_traits<R> is defined.
+     *  This is how we define is a type is a range type or not.
+     */
+    auto checker_for__is_range=[](auto&&x)->decltype(void(  lookup_traits< decltype(x)>{}  )){};
+
+    template<typename T > constexpr bool
     is_range_v = orange_utils:: is_invokable_v<decltype(checker_for__is_range), T>;
 
-    // Let's start with the simplest example - a std::pair of iterators
-    template<typename I, typename J>
-    struct traits<std:: pair<I,J>> {
-        using R = std:: pair<I,J>;
-        using value_type = std::remove_reference_t<decltype( *std::declval<I>() )>;
 
-        template<typename RR> static constexpr
-        bool
-        empty           (RR && r)   { return r.first == r.second ;}
-
-        template<typename RR> static
-        void
-        advance         (RR && r)   { ++ r.first  ;}
-
-        template<typename RR> static constexpr
-        decltype(auto)
-        front_ref       (RR && r)   { return * r.first ;}
-    };
-
-    namespace testing_namespace {
-        static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
-        static_assert(is_range_v< std::pair<int*, int*> >, "");
-    }
-
-    /*
-     * In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
-     * for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
-     * These are the 'has_trait_*' functions defined here:
+    /*  has_trait_{empty,advance,front_val,front_ref,pull}
+     *  ==================================================
+     *      In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
+     *  for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
+     *  These are the 'has_trait_*' functions defined here:
      */
 
     auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::empty    (r) )){};
@@ -246,12 +265,6 @@ namespace orange {
     has_trait_pull      = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_pull), R>;
 
 
-    static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
-    static_assert(!has_trait_front_val< std::pair<int*, int*> > , "");
-    static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
-    static_assert(!has_trait_front_ref< std::vector<int> > , "");
-
-
     /*
      * Users will never call the functions in the trait object directly.
      * Instead, we synthesize all the functions, where possible, such
@@ -264,12 +277,14 @@ namespace orange {
      * necessary behaviour.
      */
 
+
     // just one overload for 'empty'
     template<typename R>
     auto constexpr
     empty  (R const &r)
     ->decltype(lookup_traits<R>::empty(r))
     { return lookup_traits<R>::empty(r); }
+
 
     // two overloads for 'front_val', as we can use 'front_ref'
     // instead if it's present.
@@ -278,7 +293,9 @@ namespace orange {
     > * = nullptr >
     auto constexpr
     front_val  (R &r)
-    ->decltype(auto) { return lookup_traits<R>::front_val(r); }
+    ->decltype(auto)
+    { return lookup_traits<R>::front_val(r); }
+
     template<typename R , std::enable_if_t<
         !has_trait_front_val<R&> && has_trait_front_ref<R&>
     > * = nullptr >
@@ -286,19 +303,22 @@ namespace orange {
     front_val  (R &r)
     {   return lookup_traits<R>::front_ref(r); }
 
+
     // one overload for 'front_ref'
     template<typename R>
     auto constexpr
     front_ref  (R & r)
-    ->decltype(lookup_traits<R>::front_ref(r)) {
-        return lookup_traits<R>::front_ref(r); }
+    ->decltype(lookup_traits<R>::front_ref(r))
+    {   return lookup_traits<R>::front_ref(r); }
+
 
     // one overload for 'advance'
     template<typename R>
     auto constexpr
     advance    (R       &r)
-    ->decltype(lookup_traits<R>::advance(r)) {
-        return lookup_traits<R>::advance(r); }
+    ->decltype(lookup_traits<R>::advance(r))
+    {   return lookup_traits<R>::advance(r); }
+
 
     /* Next, we see 'begin' and 'end', which are useful
      * for working with range-based for.
@@ -312,15 +332,16 @@ namespace orange {
     template<typename R>
     auto constexpr
     begin      (R       &r)
-    ->decltype(lookup_traits<R>::begin  (r)) {
-        return lookup_traits<R>::begin  (r); }
+    ->decltype(lookup_traits<R>::begin  (r))
+    {   return lookup_traits<R>::begin  (r); }
 
     // one overload for 'end'
     template<typename R>
     auto constexpr
     end        (R       &r)
-    ->decltype(lookup_traits<R>::end    (r)) {
-        return lookup_traits<R>::end    (r); }
+    ->decltype(lookup_traits<R>::end    (r))
+    {   return lookup_traits<R>::end    (r); }
+
 
     /* Three overloads for 'pull'.
      *  1. has 'pull' in its trait
@@ -338,22 +359,67 @@ namespace orange {
         !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
     >* =nullptr>
     auto constexpr
-    pull       (R       &r) {
+    pull       (R       &r)
+    {
         auto copy = lookup_traits<R>::front_val(r);
         lookup_traits<R>::advance(r);
-        return copy; }
+        return copy;
+    }
 
     template<typename R , std::enable_if_t<
         !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
     >* =nullptr>
     auto constexpr
-    pull       (R       &r) {
+    pull       (R       &r)
+    {
         auto copy = lookup_traits<R>::front_ref(r);
         lookup_traits<R>::advance(r);
-        return copy; }
+        return copy;
+    }
 }
 
+
+
+/*
+ * Everything above is very general. It's relevant for all range
+ * types. Next, we get more specific, by defining some traits
+ * and the methods.
+ *
+ * The functions in the trait are static, and capture the range
+ * as R&, where R is a deduced template parameter.
+ */
+
 namespace orange {
+
+
+    // Let's start with the simplest example - a std::pair of iterators
+    template<typename I, typename J>
+    struct traits<std:: pair<I,J>> {
+
+        template<typename R> static constexpr
+        bool
+        empty           (R & r)   { return r.first == r.second ;}
+
+        template<typename R> static
+        void
+        advance         (R & r)   { ++ r.first  ;}
+
+        template<typename R> static constexpr
+        decltype(auto)
+        front_ref       (R & r)   { return * r.first ;}
+    };
+
+
+    namespace testing_namespace {
+        static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
+        static_assert(is_range_v< std::pair<int*, int*> >, "");
+        static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
+        static_assert(!has_trait_front_val< std::pair<int*, int*> > , "");
+        static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
+        static_assert(!has_trait_front_ref< std::vector<int> > , "");
+    }
+
+
     struct orange_use_the_methods{}; /* if a class inherits from this, then it means
                                       * that it has methods instead of having to
                                       * manually specify the traits */
