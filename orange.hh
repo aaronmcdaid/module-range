@@ -805,5 +805,32 @@ namespace orange {
         static_assert(25 == (ints(10) |filter| odd_t{}              |accumulate) ,"");
         static_assert(30 == (ints(10) |filter| greater_than_5_t{}   |accumulate) ,"");
         static_assert(-30 == (ints(10) |filter| greater_than_5_t{} |mapr| negate_t{}   |accumulate) ,"");
+
+        template<typename T, std::size_t N>
+        struct orange_over_an_array
+        {   // This class is only useful in the constexpr tests. It's rubbish, but it plays nicely with
+            // constexpr. It's the only way I can think of to get generic data into a range.
+            T m_array[N];
+            using Tc = T const;
+            std:: size_t offset;
+
+            constexpr
+            auto empty() const { return offset >= N; }
+            constexpr
+            auto pull ()       { return m_array[offset++]; }
+        };
+    }
+    // (dropping back up a namespace temporarily, just
+    // to define the trait for 'orange_over_an_array'
+    template<typename T, std::size_t N>
+    struct traits<testing_namespace:: orange_over_an_array<T,N>> {
+        using R = testing_namespace:: orange_over_an_array<T,N>;
+        static constexpr
+        decltype(auto) empty(R const & r) { return r.empty(); }
+        static constexpr
+        decltype(auto) pull(R & r) { return r.pull(); }
+    };
+    namespace testing_namespace{
+        static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
     }
 } // namespace orange
