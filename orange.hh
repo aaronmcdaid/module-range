@@ -179,7 +179,7 @@ namespace rr_utils {
 }
 
 namespace orange {
-    template<typename R>
+    template<typename R, typename = void> // second template arg is to allow 'void_t' https://stackoverflow.com/questions/27687389/how-does-void-t-work
     struct traits;
 
     auto checker_for__is_range=[](auto&&x)->decltype(void(  traits< std::remove_reference_t<decltype(x)>>{}  )){};
@@ -337,6 +337,44 @@ namespace orange {
         auto copy = traits<R>::front_ref(r);
         traits<R>::advance(r);
         return copy; }
+}
+
+namespace orange {
+    struct orange_use_the_methods{}; /* if a class inherits from this, then it means
+                                      * that it has methods instead of having to
+                                      * manually specify the traits */
+    template<typename T>
+    struct traits< T , rr_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
+        template<typename R> static constexpr
+        auto
+        empty      (R &  r)
+        ->decltype(r.empty())
+        {   return r.empty(); }
+
+        template<typename R> static constexpr
+        auto
+        front_ref  (R &  r)
+        ->decltype(r.front_ref())
+        {   return r.front_ref(); }
+
+        template<typename R> static constexpr
+        auto
+        front_val  (R &  r)
+        ->decltype(r.front_val())
+        {   return r.front_val(); }
+
+        template<typename R> static constexpr
+        auto
+        pull       (R &  r)
+        ->decltype(r.pull     ())
+        {   return r.pull     (); }
+
+        template<typename R> static constexpr
+        auto
+        advance    (R &  r)
+        ->decltype(r.advance  ())
+        {   return r.advance  (); }
+    };
 }
 
 namespace orange {
