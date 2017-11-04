@@ -485,6 +485,10 @@ namespace orange {
         advance         (R & r)   { ++ r.first  ;}
 
         template<typename R> static constexpr
+        auto
+        front_val       (R & r)   { return * std::forward<R>(r) .first ;}
+
+        template<typename R> static constexpr
         decltype(auto)
         front_ref       (R & r)   { return * std::forward<R>(r) .first ;}
 
