@@ -841,7 +841,7 @@ namespace orange {
     auto constexpr
     operator| (R r, collect_tag_t) {
         static_assert( is_range_v<R> ,"");
-        using value_type = decltype (   orange::front_val( r )  );
+        using value_type = decltype (   orange::pull( r )  );
         static_assert(!std::is_reference<value_type>{} ,"");
         std:: vector<value_type> res;
 
