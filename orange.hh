@@ -741,6 +741,9 @@ namespace orange {
         return as_range(std::forward<R>(nr)) | tag;
     }
 
+
+
+
     /*
      * Now, to start defining the various  |operations|
      */
@@ -802,6 +805,8 @@ namespace orange {
                               };
     }
 
+
+    // |filter|
     template<typename R, typename F>
     struct filter_range
     {
@@ -834,7 +839,6 @@ namespace orange {
         orange_advance    (M &m) { orange:: advance(m.m_r); m.skip_if_necessary(); }
     };
 
-    // |filter|
     template<typename R, typename Func>
     auto constexpr
     operator| (forward_this_with_a_tag<R,filter_tag_t> f, Func && func) {
@@ -844,6 +848,7 @@ namespace orange {
                               , std::forward<Func>(func)
                               };
     }
+
 
     // |collect|
     template<typename R, typename Func>
@@ -881,13 +886,20 @@ namespace orange {
         return res;
     }
 
-    // next, forward 'as_range()' if the lhs is not a range
+
+    // next, forward 'collect' and 'accumulate' via 'as_range()' if the lhs is not a range
     template<typename R
+        , typename Tag
         , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t< !is_range_v<Rnonref> > * = nullptr >
+        , std::enable_if_t<
+                !is_range_v<Rnonref>
+             && (   std::is_same<Tag, collect_tag_t>{}
+                 || std::is_same<Tag, accumulate_tag_t>{}
+                )
+        > * = nullptr >
     auto constexpr
-    operator| (R && r, collect_tag_t) {
-        return as_range(std::forward<R>(r)) | orange:: collect;
+    operator| (R && r, Tag operation) {
+        return as_range(std::forward<R>(r)) | operation;
     }
 
     //  |accumulate
@@ -1026,5 +1038,12 @@ namespace orange {
             return ooaa | accumulate;
         }
         static_assert( 160 == foo() , "");
+
+        constexpr
+        int test_as_range_conversions() {
+            int x[] = {7,8,9};
+            return x | accumulate;
+        }
+        static_assert(24 == test_as_range_conversions() ,"");
     }
 } // namespace orange
