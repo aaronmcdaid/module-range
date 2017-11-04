@@ -219,41 +219,17 @@ namespace orange {
         static_assert(is_range_v< std::pair<int*, int*> >, "");
     }
 
-    template<typename R>
-    struct is_const_trait_that_can_be_forwarded;
-    template<typename R>
-    struct is_const_trait_that_can_be_forwarded<const R> {
-        static_assert( std::is_const<const R>{} ,"");
-        static_assert(!std::is_const<      R>{} ,"");
-        constexpr static bool value = is_range_v<R>;
-    };
-    template<typename R>
-    struct is_const_trait_that_can_be_forwarded {
-        static_assert(!std::is_const<R>{} ,"");
-        constexpr static bool value = false;
-    };
-
-    // If 'R' is 'const', reuse the 'non-const' version of the trait. With
-    // care, it is still possible to respect the const-ness though.
-    template<typename R>
-    struct traits< R , orange_utils:: void_t< std::enable_if_t<
-            is_const_trait_that_can_be_forwarded<R>::value
-    > > >
-    : public traits< std::remove_const_t<R> >
-    {
-    };
-
     /*
      * In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
      * for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
      * These are the 'has_trait_*' functions defined here:
      */
 
-    auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::empty    (r) )){};
-    auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::advance  (r) )){};
-    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::front_val(r) )){};
-    auto checker_for__has_trait_front_ref   = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::front_ref(r) )){};
-    auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){};
+    auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::empty    (r) )){};
+    auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::advance  (r) )){};
+    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_val(r) )){};
+    auto checker_for__has_trait_front_ref   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_ref(r) )){};
+    auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::pull     (r) )){};
 
     template<typename R> constexpr bool
     has_trait_empty     = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_empty), R>;
@@ -289,8 +265,8 @@ namespace orange {
     template<typename R>
     auto constexpr
     empty  (R const &r)
-    ->decltype(traits<R>::empty(r))
-    { return traits<R>::empty(r); }
+    ->decltype(lookup_traits<R>::empty(r))
+    { return lookup_traits<R>::empty(r); }
 
     // two overloads for 'front_val', as we can use 'front_ref'
     // instead if it's present.
@@ -299,27 +275,27 @@ namespace orange {
     > * = nullptr >
     auto constexpr
     front_val  (R &r)
-    ->decltype(auto) { return traits<R>::front_val(r); }
+    ->decltype(auto) { return lookup_traits<R>::front_val(r); }
     template<typename R , std::enable_if_t<
         !has_trait_front_val<R> && has_trait_front_ref<R>
     > * = nullptr >
     auto constexpr
     front_val  (R &r)
-    {   return traits<R>::front_ref(r); }
+    {   return lookup_traits<R>::front_ref(r); }
 
     // one overload for 'front_ref'
     template<typename R>
     auto constexpr
     front_ref  (R & r)
-    ->decltype(traits<R>::front_ref(r)) {
-        return traits<R>::front_ref(r); }
+    ->decltype(lookup_traits<R>::front_ref(r)) {
+        return lookup_traits<R>::front_ref(r); }
 
     // one overload for 'advance'
     template<typename R>
     auto constexpr
     advance    (R       &r)
-    ->decltype(traits<R>::advance(r)) {
-        return traits<R>::advance(r); }
+    ->decltype(lookup_traits<R>::advance(r)) {
+        return lookup_traits<R>::advance(r); }
 
     /* Next, we see 'begin' and 'end', which are useful
      * for working with range-based for.
@@ -333,15 +309,15 @@ namespace orange {
     template<typename R>
     auto constexpr
     begin      (R       &r)
-    ->decltype(traits<R>::begin  (r)) {
-        return traits<R>::begin  (r); }
+    ->decltype(lookup_traits<R>::begin  (r)) {
+        return lookup_traits<R>::begin  (r); }
 
     // one overload for 'end'
     template<typename R>
     auto constexpr
     end        (R       &r)
-    ->decltype(traits<R>::end    (r)) {
-        return traits<R>::end    (r); }
+    ->decltype(lookup_traits<R>::end    (r)) {
+        return lookup_traits<R>::end    (r); }
 
     /* Three overloads for 'pull'.
      *  1. has 'pull' in its trait
@@ -351,22 +327,22 @@ namespace orange {
     template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
     auto constexpr
     pull       (R       &r)
-    { return traits<R>::pull     (r); }
+    { return lookup_traits<R>::pull     (r); }
     template<typename R , std::enable_if_t<
         !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance<R>
     >* =nullptr>
     auto constexpr
     pull       (R       &r) {
-        auto copy = traits<R>::front_val(r);
-        traits<R>::advance(r);
+        auto copy = lookup_traits<R>::front_val(r);
+        lookup_traits<R>::advance(r);
         return copy; }
     template<typename R , std::enable_if_t<
         !has_trait_pull <R> && !has_trait_front_val<R> && has_trait_front_ref<R> && has_trait_advance<R>
     >* =nullptr>
     auto constexpr
     pull       (R       &r) {
-        auto copy = traits<R>::front_ref(r);
-        traits<R>::advance(r);
+        auto copy = lookup_traits<R>::front_ref(r);
+        lookup_traits<R>::advance(r);
         return copy; }
 }
 
