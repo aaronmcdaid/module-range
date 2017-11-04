@@ -214,10 +214,26 @@ namespace orange {
         static_assert(is_range_v< std::pair<int*, int*> >, "");
     }
 
+    template<typename R>
+    struct is_const_trait_that_can_be_forwarded;
+    template<typename R>
+    struct is_const_trait_that_can_be_forwarded<const R> {
+        static_assert( std::is_const<const R>{} ,"");
+        static_assert(!std::is_const<      R>{} ,"");
+        constexpr static bool value = is_range_v<R>;
+    };
+    template<typename R>
+    struct is_const_trait_that_can_be_forwarded {
+        static_assert(!std::is_const<R>{} ,"");
+        constexpr static bool value = false;
+    };
+
     // If 'R' is 'const', reuse the 'non-const' version of the trait. With
     // care, it is still possible to respect the const-ness though.
     template<typename R>
-    struct traits< R , orange_utils:: void_t< std::enable_if_t< std::is_const<R>{} > > >
+    struct traits< R , orange_utils:: void_t< std::enable_if_t<
+            is_const_trait_that_can_be_forwarded<R>::value
+    > > >
     : public traits< std::remove_const_t<R> >
     {
     };
