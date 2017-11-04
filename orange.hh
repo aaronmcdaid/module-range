@@ -651,7 +651,7 @@ namespace orange {
     template<typename under_R, typename F>
     struct traits<mapping_range<under_R,F>> {
         using R = mapping_range<under_R,F>;
-        using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
+        using value_type = decltype( orange::front_val  ( std::declval<R&>().m_r ));
         static_assert(!std::is_reference<value_type>{} ,"");
         static constexpr
         bool empty      (R const &r) { return orange:: empty(r.m_r);}
