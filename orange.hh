@@ -420,14 +420,32 @@ namespace orange {
     }
 
 
+    /*
+     *  orange_traits_are_static_here
+     *  =============================
+     *      Writing separate traits classes for every type might be annoying. If
+     *  you have control over your own type, you may choose to place the
+     *  definitions of the functions directly in your class. To do so, you need
+     *  to create a typedef in your class called 'orange_traits_are_static_here'
+     *  with type 'orange  ::orange_traits_are_static_here', and then provide
+     *  the *static* methods you want (named 'orange_empty', 'orange_front_val',
+     *  and so on). To see an example of this, just scroll down to the
+     *  'mapping_range' template below.
+     *
+     *      Immediately following this comment is the traits class which tests
+     *  for the appropriate typedef and knows how to forward all such calls to
+     *  the appropriate function.
+     *
+     */
     struct orange_traits_are_static_here{};
     template<typename T>
-    struct traits< T , orange_utils:: void_t< std:: enable_if_t<
-        std:: is_same<
-            typename T::orange_traits_are_static_here
-            , orange  ::orange_traits_are_static_here
-        >{}
-    > >> {
+    struct traits   < T
+                    , orange_utils:: void_t< std:: enable_if_t<
+                        std:: is_same<
+                                typename T::orange_traits_are_static_here
+                                , orange  ::orange_traits_are_static_here
+                        >{}
+                    > >> {
 
 
         template<typename R> static constexpr auto
@@ -454,34 +472,20 @@ namespace orange {
         pull       (R &  r)
         ->decltype(R:: orange_pull     (r))
         {   return R:: orange_pull     (r); }
+
+        template<typename R> static constexpr auto
+        begin      (R &  r)
+        ->decltype(R:: orange_begin    (r))
+        {   return R:: orange_begin    (r); }
+
+        template<typename R> static constexpr auto
+        end        (R &  r)
+        ->decltype(R:: orange_end      (r))
+        {   return R:: orange_end      (r); }
     };
 }
 
 namespace orange {
-
-    /*
-     * Next, a 'pair_of_iterators' type in the orange:: namespace. The main (only?)
-     * reason for this (as opposed to an std::pair of iterators) is to allow
-     * 'begin' and 'end' to be defined appropriately, allowing  for(auto x : r) to
-     * work.  This is the class used when applying thing like '|'
-     */
-
-    template<typename B, typename E>
-    struct pair_of_iterators : public std::pair<B,E>
-    {
-        static_assert(!std::is_reference<B>{}, "");
-        static_assert(!std::is_reference<E>{}, "");
-
-        using std:: pair<B,E> :: pair; // to inherit the constructors
-
-        /* This struct looks pointless, but it's not.
-         * This struct, because it's in the orange:: namespace,
-         * can be found by ADL and therefore our begin/end are found easily
-         *
-         * The main place you see this is in the return from as_range()
-         */
-    };
-
     /*
      * 'pair_of_values', so that we can range between a pair of numbers.  See
      * the 'ints' function below.
@@ -489,36 +493,40 @@ namespace orange {
      * This is related to 'iter_is_own_value', which is what we get if we call 'begin'
      * and 'end' on a 'pair_of_values'.
      */
-    template<typename T>
-    struct pair_of_values { T m_begin;
-                            T m_end; };
 
-    template<typename I>
-    struct iter_is_own_value {
-        I m_i;
+    namespace impl {
+        template<typename I>
+        struct iter_is_own_value {
+            I m_i;
 
-        bool    operator!=  (iter_is_own_value const & other) const { return  m_i != other.m_i; }
-        void    operator++  ()                                      {       ++m_i; }
-        I       operator*   ()                                const { return  m_i; }
-    };
-
+            bool    operator!=  (iter_is_own_value const & other) const { return  m_i != other.m_i; }
+            void    operator++  ()                                      {       ++m_i; }
+            I       operator*   ()                                const { return  m_i; }
+        };
+    }
 
     template<typename T>
-    struct traits< pair_of_values<T> > {
-        template<typename R> static constexpr
-        bool empty      (R &  r)   { return r.m_begin == r.m_end ;}
+    struct pair_of_values
+    {
+        T m_begin;
+        T m_end;
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
 
         template<typename R> static constexpr
-        T    front_val  (R &  r)   { return r.m_begin; }
+        bool orange_empty      (R &  r)   { return r.m_begin == r.m_end ;}
 
         template<typename R> static constexpr
-        void advance    (R &  r)   {     ++ r.m_begin; }
+        T    orange_front_val  (R &  r)   { return r.m_begin; }
 
         template<typename R> static constexpr
-        auto begin      (R &  r)   { return iter_is_own_value<T>{r.m_begin};}
+        void orange_advance    (R &  r)   {     ++ r.m_begin; }
 
         template<typename R> static constexpr
-        auto end        (R &  r)   { return iter_is_own_value<T>{r.m_end  };}
+        auto orange_begin      (R &  r)   { return impl:: iter_is_own_value<T>{r.m_begin};}
+
+        template<typename R> static constexpr
+        auto orange_end        (R &  r)   { return impl:: iter_is_own_value<T>{r.m_end  };}
     };
 
     inline
@@ -528,26 +536,60 @@ namespace orange {
     constexpr
     pair_of_values<int> ints(int l, int u) { return {l,u}; }
 
+
+
+    /*
+     * Next, a 'pair_of_iterators' type in the orange:: namespace. The main (only?)
+     * reason for this (as opposed to an std::pair of iterators) is to allow
+     * 'begin' and 'end' to be defined appropriately, allowing  for(auto x : r) to
+     * work.  This is the class used when applying thing like '|'
+     * It's in the 'orange::' namespace, so 'orange::begin' and 'orange::end'
+     * can be found by ADL.
+     */
+
+    template<typename B, typename E>
+    struct pair_of_iterators : public std::pair<B,E>
+    {
+        static_assert(!std::is_reference<B>{}, "");
+        static_assert(!std::is_reference<E>{}, "");
+
+        using std:: pair<B,E> :: pair; // to inherit the constructors
+    };
+
+
     /*
      * as_range
      * Converts a non-range to a range, where appropriate. The obvious examples
      * are a container such as 'std::vector' or 'std::list'.  as_range can also
      * be called with two iterators.
-     * I should also define an 'as_range' overload that accepts a range and
-     * forwards it as-is.
      */
+
+    // already a range? Just return as is
+    template <typename T
+        , std::enable_if_t<
+            is_range_v<T> > >
+    constexpr decltype(auto)
+    as_range(T &&t)
+    { return std::forward<T>(t); }
+
+    // a container with begin and end. The typical use of 'as_range'
     template <typename T>
     auto constexpr
     as_range(T &v)
     -> pair_of_iterators<   decltype(v.begin()) ,   decltype(v.end  ()) >
-    { return {v.begin(),v.end()}; }
+    {
+        static_assert(!is_range_v<T> ,"");
+        return {v.begin(),v.end()};
+    }
 
+    // an array
     template <typename T, std:: size_t N>
     auto constexpr
     as_range(T (&v)[N])
     -> pair_of_iterators< T*, T* >
     { return {std::begin(v),std::end(v)}; }
 
+    // two iterators as arguments
     template <typename T>
     auto constexpr
     as_range(T b, T e)
