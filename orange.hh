@@ -119,11 +119,11 @@
 #include<vector>
 
 /*
- * rr_utils
+ * orange_utils
  *
  * I define 'is_invokable_v' in this namespace as it's range specific and might be useful elsewhere.
  */
-namespace rr_utils {
+namespace orange_utils {
     /*  'priority_tag' is very useful to specify priority
      *  among overloads that would otherwise be ambiguous.
      *  https://stackoverflow.com/questions/43470741/how-does-eric-nieblers-implementation-of-stdis-function-work
@@ -138,23 +138,23 @@ namespace rr_utils {
     namespace impl__is_invokable {
         template<typename F, typename ... Args>
         constexpr auto
-        is_invokable_one_overload(rr_utils::priority_tag<2>)
+        is_invokable_one_overload(orange_utils::priority_tag<2>)
         -> decltype( std::declval<F>()(std::declval<Args>()...), true )
         { return true; }
 
         template<typename F, typename ... Args>
         constexpr auto
-        is_invokable_one_overload(rr_utils::priority_tag<1>)
+        is_invokable_one_overload(orange_utils::priority_tag<1>)
         -> decltype( false )
         { return false; }
 
         template<typename F, typename ... Args>
         constexpr bool
         is_invokable_v =
-                   is_invokable_one_overload<F, Args...>(rr_utils::priority_tag<9>{});
+                   is_invokable_one_overload<F, Args...>(orange_utils::priority_tag<9>{});
     }
 
-    using impl__is_invokable:: is_invokable_v;  // to 'export' this to the rr_utils namespace
+    using impl__is_invokable:: is_invokable_v;  // to 'export' this to the orange_utils namespace
 
     namespace testing_namespace {
         /*
@@ -165,9 +165,9 @@ namespace rr_utils {
         auto checker_for__has_addition      = [](auto&&x)->decltype(void(  x + x    )){};
 
         template<typename Arg>
-        constexpr bool has_size_method  = rr_utils:: is_invokable_v<decltype(checker_for__has_size_method), Arg >;
+        constexpr bool has_size_method  = orange_utils:: is_invokable_v<decltype(checker_for__has_size_method), Arg >;
         template<typename Arg>
-        constexpr bool has_addition     = rr_utils:: is_invokable_v<decltype(checker_for__has_addition), Arg >;
+        constexpr bool has_addition     = orange_utils:: is_invokable_v<decltype(checker_for__has_addition), Arg >;
 
         static_assert( has_size_method< std::vector<int> > ,"");
         static_assert(!has_size_method< int              > ,"");
@@ -186,7 +186,7 @@ namespace orange {
 
     template<typename T >
     constexpr bool
-    is_range_v = rr_utils:: is_invokable_v<decltype(checker_for__is_range), T>;
+    is_range_v = orange_utils:: is_invokable_v<decltype(checker_for__is_range), T>;
 
     // Let's start with the simplest example - a std::pair of iterators
     template<typename I, typename J>
@@ -225,15 +225,15 @@ namespace orange {
     auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( traits<std::remove_reference_t<decltype(r)>>::pull     (r) )){};
 
     template<typename R> constexpr bool
-    has_trait_empty     = rr_utils:: is_invokable_v<decltype(checker_for__has_trait_empty), R>;
+    has_trait_empty     = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_empty), R>;
     template<typename R> constexpr bool
-    has_trait_advance   = rr_utils:: is_invokable_v<decltype(checker_for__has_trait_advance), R>;
+    has_trait_advance   = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_advance), R>;
     template<typename R> constexpr bool
-    has_trait_front_val = rr_utils:: is_invokable_v<decltype(checker_for__has_trait_front_val), R>;
+    has_trait_front_val = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_val), R>;
     template<typename R> constexpr bool
-    has_trait_front_ref = rr_utils:: is_invokable_v<decltype(checker_for__has_trait_front_ref), R>;
+    has_trait_front_ref = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_ref), R>;
     template<typename R> constexpr bool
-    has_trait_pull      = rr_utils:: is_invokable_v<decltype(checker_for__has_trait_pull), R>;
+    has_trait_pull      = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_pull), R>;
 
 
     static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
@@ -344,7 +344,7 @@ namespace orange {
                                       * that it has methods instead of having to
                                       * manually specify the traits */
     template<typename T>
-    struct traits< T , rr_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
+    struct traits< T , orange_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
         template<typename R> static constexpr
         auto
         empty      (R &  r)
