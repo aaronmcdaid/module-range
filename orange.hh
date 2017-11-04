@@ -1047,4 +1047,20 @@ namespace orange {
         }
         static_assert(24 == test_as_range_conversions() ,"");
     }
+
+
+    /*
+     * all_true
+     */
+    constexpr bool
+    all_true(void) {return true;}
+    template<typename ...Ts>
+    constexpr bool
+    all_true(bool b, Ts && ... ts) {
+        if(b)
+            return all_true(std::forward<Ts>(ts)...);
+        else
+            return false;
+    }
+
 } // namespace orange
