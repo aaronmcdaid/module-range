@@ -390,6 +390,37 @@ namespace orange {
         ->decltype(r.advance  ())
         {   return r.advance  (); }
     };
+
+    struct orange_traits_are_static_here{};
+    template<typename T>
+    struct traits< T , orange_utils:: void_t< typename T::orange_traits_are_static_here >> {
+
+
+        template<typename R> static constexpr auto
+        empty      (R &  r)
+        ->decltype(R:: orange_empty    (r))
+        {   return R:: orange_empty    (r); }
+
+        template<typename R> static constexpr auto
+        advance    (R &  r)
+        ->decltype(R:: orange_advance  (r))
+        {   return R:: orange_advance  (r); }
+
+        template<typename R> static constexpr auto
+        front_ref  (R &  r)
+        ->decltype(R:: orange_front_ref(r))
+        {   return R:: orange_front_ref(r); }
+
+        template<typename R> static constexpr auto
+        front_val  (R &  r)
+        ->decltype(R:: orange_front_val(r))
+        {   return R:: orange_front_val(r); }
+
+        template<typename R> static constexpr auto
+        pull       (R &  r)
+        ->decltype(R:: orange_pull     (r))
+        {   return R:: orange_pull     (r); }
+    };
 }
 
 namespace orange {
