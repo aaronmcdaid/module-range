@@ -274,7 +274,7 @@ namespace orange {
     > * = nullptr >
     auto constexpr
     front_val  (R const &r)
-    ->decltype(auto) { return traits<R>::front_ref(r); }
+    {   return traits<R>::front_ref(r); }
 
     // one overload for 'front_ref'
     template<typename R>
@@ -705,6 +705,7 @@ namespace orange {
         static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
         using value_type = decltype (   func   (  orange::front_val( f.m_r )  ));
+        static_assert(!std::is_reference<value_type>{} ,"");
         std:: vector<value_type> res;
 
         while(!orange::empty(f.m_r)) {
@@ -722,6 +723,7 @@ namespace orange {
     operator| (R r, collect_tag_t) {
         static_assert( is_range_v<R> ,"");
         using value_type = decltype (   orange::front_val( r )  );
+        static_assert(!std::is_reference<value_type>{} ,"");
         std:: vector<value_type> res;
 
         while(!orange::empty(r)) {
