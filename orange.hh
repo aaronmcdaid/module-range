@@ -135,6 +135,13 @@ namespace orange_utils {
     template<>
     struct priority_tag<0> {};
 
+    /*  void_t
+     * https://stackoverflow.com/questions/27687389/how-does-void-t-work
+     */
+    template< typename ... >
+    struct voider_t { using type = void; };
+    template< typename ... Ts> using void_t = typename voider_t<Ts...> :: type;
+
     namespace impl__is_invokable {
         template<typename F, typename ... Args>
         constexpr auto
@@ -174,10 +181,6 @@ namespace orange_utils {
         static_assert( has_size_method< std::vector<int> > ,"");
         static_assert(!has_size_method< int              > ,"");
     }
-
-    template< typename ... >
-    struct voider_t { using type = void; };
-    template< typename ... Ts> using void_t = typename voider_t<Ts...> :: type; // void_t : https://stackoverflow.com/questions/27687389/how-does-void-t-work
 }
 
 namespace orange {
@@ -271,13 +274,13 @@ namespace orange {
     // two overloads for 'front_val', as we can use 'front_ref'
     // instead if it's present.
     template<typename R , std::enable_if_t<
-        has_trait_front_val<R>
+        has_trait_front_val<R&>
     > * = nullptr >
     auto constexpr
     front_val  (R &r)
     ->decltype(auto) { return lookup_traits<R>::front_val(r); }
     template<typename R , std::enable_if_t<
-        !has_trait_front_val<R> && has_trait_front_ref<R>
+        !has_trait_front_val<R&> && has_trait_front_ref<R&>
     > * = nullptr >
     auto constexpr
     front_val  (R &r)
@@ -324,20 +327,24 @@ namespace orange {
      *  2. doesn't have 'pull' but does have 'front_val' and 'advance'
      *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
      */
-    template<typename R , std::enable_if_t< has_trait_pull<R>>* =nullptr>
+    template<typename R , std::enable_if_t<
+        has_trait_pull<R&>
+    >* =nullptr>
     auto constexpr
     pull       (R       &r)
     { return lookup_traits<R>::pull     (r); }
+
     template<typename R , std::enable_if_t<
-        !has_trait_pull <R> && has_trait_front_val<R> && has_trait_advance<R>
+        !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
     >* =nullptr>
     auto constexpr
     pull       (R       &r) {
         auto copy = lookup_traits<R>::front_val(r);
         lookup_traits<R>::advance(r);
         return copy; }
+
     template<typename R , std::enable_if_t<
-        !has_trait_pull <R> && !has_trait_front_val<R> && has_trait_front_ref<R> && has_trait_advance<R>
+        !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
     >* =nullptr>
     auto constexpr
     pull       (R       &r) {
@@ -351,10 +358,8 @@ namespace orange {
                                       * that it has methods instead of having to
                                       * manually specify the traits */
     template<typename T>
-    struct traits< T , orange_utils:: void_t< std::enable_if_t<
-            std::is_base_of<orange_use_the_methods, T>{}
-        && !std::is_const<T>{}
-    > > > {
+    struct traits< T , orange_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
+        static_assert(!std::is_const<T>{} ,"");
         template<typename R> static constexpr
         auto
         empty      (R &  r)
@@ -523,7 +528,7 @@ namespace orange {
 
 
         constexpr
-        owning_range    (C && c)
+        owning_range    (C && c) // takes only an rvalue reference, *not* a universal reference
         : m_c(std::move(c)) , m_r( as_range(m_c) )
         {}
 
@@ -549,7 +554,7 @@ namespace orange {
         , std::enable_if_t< !std::is_reference<T>{} > * = nullptr
         >
     auto constexpr
-    as_range(T &&t)
+    as_range(T &&t) // enable_if is used here, to ensure it is only an rvalue
     {
         return owning_range<T>{ std::forward<T>(t) };
     }
@@ -563,8 +568,9 @@ namespace orange {
      *
      * The above works because we overload the '|' operator. 'foreach'
      * is an object of an empty tag type. Therefore  v|foreach  is
-     * a valid expression which doesn't do much except capture a reference
-     * to  v  . Then, via another overload of  |  , we apply the lambda.
+     * a valid expression which doesn't do much except capture
+     * a copy of the range object
+     * Then, via another overload of  |  , we apply the lambda.
      * So, the above can be read as
      *
      *  (v | foreach)  |  [](auto x){ std::cout << x << '\n'; }
@@ -575,35 +581,30 @@ namespace orange {
         constexpr tagger_t() {} // clang-3.8.0 insists on a user-provided default constructor
     };
 
-    /* Don't worry about the 'extern' below. I think it's safe.
-     * I've asked StackOverflow about it:
-     *  https://stackoverflow.com/questions/47073805/safe-to-pass-empty-variables-by-value-even-with-no-linkage
-     */
-
     struct foreach_tag_t        {};     constexpr   tagger_t<foreach_tag_t      >   foreach;
-    struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
-                                        constexpr   tagger_t<map_tag_t          >   mapr;
     struct filter_tag_t         {};     constexpr   tagger_t<filter_tag_t       >   filter;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
+    struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
+    struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
+                                        constexpr   tagger_t<map_tag_t          >   mapr;
     struct collect_tag_t{constexpr collect_tag_t(){}};
                                         constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
     struct accumulate_tag_t{constexpr accumulate_tag_t(){}};
                                         constexpr            accumulate_tag_t       accumulate;    // no need for 'tagger_t', this directly runs
-    struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
 
+
+    // the type to capture the value, i.e. for the left-hand '|'
+    // of   (x|operation|func)
     template<typename R, typename Tag_type>
     struct forward_this_with_a_tag {
         R m_r;
-        static_assert(!std:: is_reference<R>{}, ""); // lvalue or rvalue, but not value
-        static_assert( is_range_v< std::remove_reference_t<R> >, "");
+        static_assert(!std:: is_reference<R>{}, "");
+        static_assert( is_range_v< R >, "");
     };
 
-    // These two are crucial. This is where we overload '|' so this works:
-    //
-    //    x|oper
-    //
-    // where 'x' is a range (or is convertible to a range via 'as_range' and
-    // 'oper' is one of {foreach,map_range,mapr,map_collect,collect,take_collec}
+    /*
+     * The actual overloads of '|' are here.
+     */
     template<typename R, typename Tag_type
         , std::enable_if_t< is_range_v<R> > * = nullptr // if 'r' is a range
         >
@@ -625,15 +626,6 @@ namespace orange {
 
     /*
      * Now, to start defining the various  |operations|
-     */
-    /*
-     * |mapr|   (also known as |map_range|
-     *
-     * Define the object which stores the underlying range, and the
-     * functor, by value.
-     * {Note, I should make sure it can 'move' non-copyables in}
-     *
-     * Then, define the traits for this 'mapping_range'
      */
 
     template<typename R, typename F>
