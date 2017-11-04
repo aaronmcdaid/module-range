@@ -635,6 +635,7 @@ namespace orange {
     struct traits<mapping_range<under_R,F>> {
         using R = mapping_range<under_R,F>;
         using value_type = decltype( orange::front_val  ( std::declval<R>().m_r ));
+        static_assert(!std::is_reference<value_type>{} ,"");
         static constexpr
         bool empty      (R const &r) { return orange:: empty(r.m_r);}
         static constexpr
@@ -822,19 +823,28 @@ namespace orange {
             auto pull ()       { return m_array[offset++]; }
             constexpr
             T & front_ref ()       { return m_array[offset]; }
+            constexpr
+            T   front_val ()       { return m_array[offset]; }
         };
     }
     // (dropping back up a namespace temporarily, just
     // to define the trait for 'orange_over_an_array'
     template<typename T, std::size_t N>
     struct traits<testing_namespace:: orange_over_an_array<T,N>> {
-        using R = testing_namespace:: orange_over_an_array<T,N>;
+
+        template<typename RR>
         static constexpr
-        decltype(auto) empty(R const & r) { return r.empty(); }
+        decltype(auto) empty(RR & r) { return r.empty(); }
+
+        template<typename RR>
         static constexpr
-        decltype(auto) pull(R & r) { return r.pull(); }
+        decltype(auto) pull(RR & r) { return r.pull(); }
+
+        template<typename RR>
         static constexpr
-        decltype(auto) front_ref(R & r) { return r.front_ref(); }
+        decltype(auto)
+        front_ref(RR & r)
+        {   return r.front_ref(); }
     };
     namespace testing_namespace{
         static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
