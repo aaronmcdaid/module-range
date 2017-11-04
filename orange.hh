@@ -214,6 +214,14 @@ namespace orange {
         static_assert(is_range_v< std::pair<int*, int*> >, "");
     }
 
+    // If 'R' is 'const', reuse the 'non-const' version of the trait. With
+    // care, it is still possible to respect the const-ness though.
+    template<typename R>
+    struct traits< R , orange_utils:: void_t< std::enable_if_t< std::is_const<R>{} > > >
+    : public traits< std::remove_const_t<R> >
+    {
+    };
+
     /*
      * In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
      * for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
@@ -346,7 +354,10 @@ namespace orange {
                                       * that it has methods instead of having to
                                       * manually specify the traits */
     template<typename T>
-    struct traits< T , orange_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
+    struct traits< T , orange_utils:: void_t< std::enable_if_t<
+            std::is_base_of<orange_use_the_methods, T>{}
+        && !std::is_const<T>{}
+    > > > {
         template<typename R> static constexpr
         auto
         empty      (R &  r)
