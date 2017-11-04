@@ -277,13 +277,13 @@ namespace orange {
         has_trait_front_val<R>
     > * = nullptr >
     auto constexpr
-    front_val  (R const &r)
+    front_val  (R &r)
     ->decltype(auto) { return traits<R>::front_val(r); }
     template<typename R , std::enable_if_t<
         !has_trait_front_val<R> && has_trait_front_ref<R>
     > * = nullptr >
     auto constexpr
-    front_val  (R const &r)
+    front_val  (R &r)
     {   return traits<R>::front_ref(r); }
 
     // one overload for 'front_ref'
