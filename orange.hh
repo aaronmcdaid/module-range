@@ -420,43 +420,6 @@ namespace orange {
     }
 
 
-    struct orange_use_the_methods{}; /* if a class inherits from this, then it means
-                                      * that it has methods instead of having to
-                                      * manually specify the traits */
-    template<typename T>
-    struct traits< T , orange_utils:: void_t< std::enable_if_t< std::is_base_of<orange_use_the_methods, T>{} > > > {
-        static_assert(!std::is_const<T>{} ,"");
-        template<typename R> static constexpr
-        auto
-        empty      (R &  r)
-        ->decltype(r.empty())
-        {   return r.empty(); }
-
-        template<typename R> static constexpr
-        auto
-        front_ref  (R &  r)
-        ->decltype(r.front_ref())
-        {   return r.front_ref(); }
-
-        template<typename R> static constexpr
-        auto
-        front_val  (R &  r)
-        ->decltype(r.front_val())
-        {   return r.front_val(); }
-
-        template<typename R> static constexpr
-        auto
-        pull       (R &  r)
-        ->decltype(r.pull     ())
-        {   return r.pull     (); }
-
-        template<typename R> static constexpr
-        auto
-        advance    (R &  r)
-        ->decltype(r.advance  ())
-        {   return r.advance  (); }
-    };
-
     struct orange_traits_are_static_here{};
     template<typename T>
     struct traits< T , orange_utils:: void_t< std:: enable_if_t<
