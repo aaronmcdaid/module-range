@@ -667,26 +667,13 @@ namespace orange {
         R m_r;
         F m_f;
 
-        //using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
         template<typename M> static constexpr bool
         orange_empty      (M &m) { return orange:: empty(m.m_r);}
         template<typename M> static constexpr void
         orange_advance    (M &m) { orange::advance( m.m_r ) ;}
         template<typename M> static constexpr auto
         orange_front_val  (M &m) { return m.m_f(orange::front_val  ( m.m_r )) ;}
-    };
-
-    template<typename under_R, typename F>
-    struct traits<mapping_range<under_R,F>> {
-        using R = mapping_range<under_R,F>;
-        using value_type = decltype( orange::front_val  ( std::declval<R&>().m_r ));
-        static_assert(!std::is_reference<value_type>{} ,"");
-        static constexpr
-        bool empty      (R const &r) { return R::orange_empty(r);}
-        static constexpr
-        void advance    (R       &r) { R:: orange_advance(r); }
-        static constexpr
-        auto front_val      (R const &r) { return R:: orange_front_val(r); }
     };
 
     // |mapr| or |map_range|
