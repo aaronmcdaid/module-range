@@ -393,7 +393,12 @@ namespace orange {
 
     struct orange_traits_are_static_here{};
     template<typename T>
-    struct traits< T , orange_utils:: void_t< typename T::orange_traits_are_static_here >> {
+    struct traits< T , orange_utils:: void_t< std:: enable_if_t<
+        std:: is_same<
+            typename T::orange_traits_are_static_here
+            , orange  ::orange_traits_are_static_here
+        >{}
+    > >> {
 
 
         template<typename R> static constexpr auto
