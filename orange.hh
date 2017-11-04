@@ -760,8 +760,8 @@ namespace orange {
 
     template<typename R, typename F>
     struct filter_range
-    : public orange_use_the_methods
     {
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
         static_assert(!std::is_reference<R>{},"");
         static_assert(!std::is_reference<F>{},"");
         static_assert( is_range_v<R>, "");
@@ -782,12 +782,12 @@ namespace orange {
         : m_r(std::forward<RR>(r)) , m_f(std::forward<FF>(f))
         { skip_if_necessary(); }
 
-        constexpr bool
-        empty       () const    { return orange:: empty(m_r); }
-        constexpr void
-        advance     ()          { orange::advance( m_r ); this->skip_if_necessary() ;}
-        constexpr auto
-        front_val   () const    { return orange::front_val  ( m_r ) ;}
+        template<typename M> static constexpr decltype(auto)
+        orange_empty      (M &m) { return orange:: empty    (m.m_r);}
+        template<typename M> static constexpr decltype(auto)
+        orange_front_val  (M &m) { return orange:: front_val(m.m_r);}
+        template<typename M> static constexpr void
+        orange_advance    (M &m) { orange:: advance(m.m_r); m.skip_if_necessary(); }
     };
 
     // |filter|
