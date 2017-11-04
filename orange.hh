@@ -184,7 +184,12 @@ namespace orange {
     template<typename R, typename = void> // second template arg is to allow 'void_t' https://stackoverflow.com/questions/27687389/how-does-void-t-work
     struct traits;
 
-    auto checker_for__is_range=[](auto&&x)->decltype(void(  traits< std::remove_reference_t<decltype(x)>>{}  )){};
+    template<typename R
+            , typename R_decayed = std::decay_t<R>
+            , decltype( traits< R_decayed> {} ) * = nullptr >
+    struct lookup_traits : public traits<R_decayed> {};
+
+    auto checker_for__is_range=[](auto&&x)->decltype(void(  lookup_traits< std::remove_reference_t<decltype(x)>>{}  )){};
 
     template<typename T >
     constexpr bool
