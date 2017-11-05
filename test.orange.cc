@@ -3,6 +3,7 @@
 #include "../bits.and.pieces/utils.hh"
 #include<iostream>
 #include<vector>
+#include<memory>
 using std:: vector;
 using std:: string;
 using namespace orange;
@@ -136,5 +137,28 @@ int main () {
         constexpr
         auto yz = as_crange( std::array<double, 4> {{ 1.0,2.5,2.5,4.0 }} ) | accumulate;
         static_assert(yz == 10,"");
+    }
+    {
+        constexpr
+        int array[] = {7,3,4};
+        static_assert(14 == (as_range( array ) | accumulate), "");
+        auto oar = as_range( (int[]) {7,3,4} );
+        PP(oar.m_array[0]);
+        PP(oar.m_array[1]);
+        PP(oar.m_array[2]);
+        auto oar2 = as_range( (std::unique_ptr<double>[])   { std::make_unique<double>(7)
+                                                            , std::make_unique<double>(3)
+                                                            , std::make_unique<double>(4)
+                                                            } );
+        PP(*oar2.m_array[0]);
+        PP(*oar2.m_array[1]);
+        PP(*oar2.m_array[2]);
+        as_range( (std::unique_ptr<double>[])   { std::make_unique<double>(7)
+                                                , std::make_unique<double>(3)
+                                                , std::make_unique<double>(4)
+                                                } )
+            |foreach|
+                [](auto&&x) { PP(*x) ; } ;
+
     }
 }
