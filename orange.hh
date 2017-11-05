@@ -1147,6 +1147,16 @@ namespace orange {
             static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
             return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges)));
         }
+        template< size_t Index
+                , typename Z
+                , enum_zip_policy_on_references my_policy_deduced = my_policy
+                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: mixture >* =nullptr
+                > static constexpr auto
+        get_one_item_to_return(Z & z)
+        -> decltype(auto)
+        {
+            return orange::front_val(std::template get<Index>(z.m_ranges));
+        }
 
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
@@ -1159,6 +1169,7 @@ namespace orange {
         }
     };
 
+    // zip_val
     template<typename ... Rs
             , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
             >
@@ -1168,6 +1179,7 @@ namespace orange {
                 ( std::forward<Rs>(rs)...) ;
     }
 
+    // zip_ref
     template< typename ... Rs
             , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
             >
@@ -1178,7 +1190,17 @@ namespace orange {
                 ( std::forward<Rs>(rs)...) ;
     }
 
-    // If 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
+    // zip - use front_ref where possible, front_val otherwise, different for each sub-range
+    template< typename ... Rs
+            , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
+            >
+    auto
+    zip(Rs && ... rs) {
+        return  zip_t<enum_zip_policy_on_references:: mixture, std::decay_t<Rs>...>
+                ( std::forward<Rs>(rs)...) ;
+    }
+
+    // If 'zip', 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
     template<typename ... Rs
             , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
             > auto
@@ -1194,6 +1216,14 @@ namespace orange {
     -> decltype(auto)
     {
         return zip_ref( orange::as_range(std::forward<Rs>(rs))...) ;
+    }
+    template<typename ... Rs
+            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            > auto
+    zip(Rs && ... rs)
+    -> decltype(auto)
+    {
+        return zip( orange::as_range(std::forward<Rs>(rs))...) ;
     }
 
     namespace testing_namespace {
