@@ -109,13 +109,14 @@ int main () {
         ;
         zip     (   std:: vector<int>{7,6,5,4}
                 ,   as_range(std:: vector<char>{'a','b','c','d'})
-                ,   ints(10)
+                ,   ints()
                 )
-            |foreach|
+            |mapr|
                 [](auto && tz) {
                     print_type(tz);
                     PP(tz);
                 }
+            |discard_collect
         ;
 
     }
