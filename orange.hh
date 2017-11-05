@@ -225,6 +225,7 @@ namespace orange_utils {
     using impl__is_invokable:: is_invokable_v;  // to 'export' this to the orange_utils namespace
 
     template<typename ... Ts>
+    constexpr
     void ignore(Ts && ...) {}
 
     /* testing_namespace
@@ -1289,9 +1290,12 @@ namespace orange {
         type_of_tuple m_ranges;
 
         template< typename ... Ts >
+        constexpr
         zip_t(Ts && ... ts) : m_ranges(std::forward<Ts>(ts)...) {}
 
+        constexpr
         zip_t(zip_t const &) = default;
+        constexpr
         zip_t(zip_t      &&) = default;
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
@@ -1366,7 +1370,7 @@ namespace orange {
     template<typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
-    auto
+    auto constexpr
     zip_val(Rs && ... rs) {
         return  zip_t<enum_zip_policy_on_references :: values_only, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
@@ -1396,7 +1400,7 @@ namespace orange {
     // If 'zip', 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
     template<typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
-            > auto
+            > auto constexpr
     zip_val(Rs && ... rs)
     -> decltype(auto)
     {
