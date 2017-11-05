@@ -345,17 +345,13 @@ namespace orange {
 
     // two overloads for 'front_val', as we can use 'front_ref'
     // instead if it's present.
-    template<typename R , std::enable_if_t<
-        has_trait_front_val<R&>
-    > * = nullptr >
+    template<typename R , SFINAE_ENABLE_IF_CHECK( has_trait_front_val<R&> )>
     auto constexpr
     front_val  (R &r)
     ->decltype(auto)
     { return lookup_traits<R>::front_val(r); }
 
-    template<typename R , std::enable_if_t<
-        !has_trait_front_val<R&> && has_trait_front_ref<R&>
-    > * = nullptr >
+    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && has_trait_front_ref<R&> )>
     auto constexpr
     front_val  (R &r)
     {   return lookup_traits<R>::front_ref(r); }
@@ -405,16 +401,16 @@ namespace orange {
      *  2. doesn't have 'pull' but does have 'front_val' and 'advance'
      *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
      */
-    template<typename R , std::enable_if_t<
-        has_trait_pull<R&>
-    >* =nullptr>
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( has_trait_pull<R&> )
+            >
     auto constexpr
     pull       (R       &r)
     { return lookup_traits<R>::pull     (r); }
 
-    template<typename R , std::enable_if_t<
-        !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
-    >* =nullptr>
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&> )
+            >
     auto constexpr
     pull       (R       &r)
     {
@@ -423,9 +419,9 @@ namespace orange {
         return copy;
     }
 
-    template<typename R , std::enable_if_t<
-        !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
-    >* =nullptr>
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&> )
+            >
     auto constexpr
     pull       (R       &r)
     {
@@ -625,9 +621,8 @@ namespace orange {
      */
 
     // already a range? Just return as is
-    template <typename T
-        , std::enable_if_t<
-            is_range_v<T> > * = nullptr
+    template<typename T
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<T> )
             >
     constexpr decltype(auto)
     as_range(T &&t)
@@ -728,9 +723,9 @@ namespace orange {
     // as_range, for rvalues that aren't ranges. In this case, we wrap them
     // up on owning_range. It's non-copyable, that's how it maintains the
     // semantics of ranges.
-    template <typename T , std::enable_if_t<
-        !std::is_reference<T>{} && !is_range_v<T>
-    > * = nullptr >
+    template<typename T
+            , SFINAE_ENABLE_IF_CHECK( !std::is_reference<T>{} && !is_range_v<T> )
+            >
     auto constexpr
     as_range(T &&t) // enable_if is used here, to ensure it is only an rvalue
     {
@@ -787,16 +782,16 @@ namespace orange {
      * The actual overloads of '|' are here.
      */
     template<typename R, typename Tag_type
-        , std::enable_if_t< is_range_v<R> > * = nullptr // if 'r' is a range
-        >
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<R> ) // if 'r' is a range
+            >
     auto constexpr
     operator| (R r, tagger_t<Tag_type>) {
         static_assert( is_range_v<R> ,"");
         return forward_this_with_a_tag<R, Tag_type>    {   std::move(r)  };
     }
     template<typename R, typename Tag_type
-        , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t<!is_range_v<Rnonref> > * = nullptr // if 'nr' is a not a range
+            , typename Rnonref = std::remove_reference_t<R>
+            , SFINAE_ENABLE_IF_CHECK( !is_range_v<Rnonref> ) // if 'nr' is a not a range
         >
     auto constexpr
     operator| (R && nr, tagger_t<Tag_type> tag)
@@ -816,8 +811,8 @@ namespace orange {
     // =========
     // Two overloads, depending on whether we have 'front_ref' or not
     template<typename R, typename Func
-        , std::enable_if_t< has_trait_front_ref<R> > * = nullptr
-        >
+            , SFINAE_ENABLE_IF_CHECK( has_trait_front_ref<R> )
+            >
     constexpr auto
     operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
     -> void
@@ -828,9 +823,8 @@ namespace orange {
         }
     }
     template<typename R, typename Func
-        , std::enable_if_t<
-        !has_trait_front_ref<R>
-        > * = nullptr >
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_front_ref<R> )
+            >
     constexpr auto
     operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
     -> decltype( orange::pull(r.m_r), (void)0 ) // void, but SFINAE on 'pull' first
@@ -933,9 +927,9 @@ namespace orange {
     }
 
     template<typename R
-        , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t< is_range_v<Rnonref> > * = nullptr
-        >
+            , typename Rnonref = std::remove_reference_t<R>
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<Rnonref> )
+            >
     auto constexpr
     operator| (R r, collect_tag_t) {
         static_assert( is_range_v<R> ,"");
@@ -955,12 +949,10 @@ namespace orange {
     template<typename R
         , typename Tag
         , typename Rnonref = std::remove_reference_t<R>
-        , std::enable_if_t<
-                !is_range_v<Rnonref>
-             && (   std::is_same<Tag, collect_tag_t>{}
-                 || std::is_same<Tag, accumulate_tag_t>{}
-                )
-        > * = nullptr >
+        , SFINAE_ENABLE_IF_CHECK(   !is_range_v<Rnonref>
+                                 && (   std::is_same<Tag, collect_tag_t>{}
+                                     || std::is_same<Tag, accumulate_tag_t>{}))
+        >
     auto constexpr
     operator| (R && r, Tag operation) {
         return as_range(std::forward<R>(r)) | operation;
@@ -968,8 +960,8 @@ namespace orange {
 
     //  |accumulate
     template<typename R
-        , std::enable_if_t< is_range_v<R> > * = nullptr
-        >
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<R> )
+            >
     auto constexpr
     operator| (R r, accumulate_tag_t) {
         static_assert(!std::is_reference<R>{},"");
@@ -1171,8 +1163,7 @@ namespace orange {
 
         template< size_t Index
                 , typename Z
-                , enum_zip_policy_on_references my_policy_deduced = my_policy
-                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: values_only >* =nullptr
+                , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: values_only )
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
@@ -1183,7 +1174,7 @@ namespace orange {
         template< size_t Index
                 , typename Z
                 , enum_zip_policy_on_references my_policy_deduced = my_policy
-                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: always_references >* =nullptr
+                , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: always_references )
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
@@ -1223,7 +1214,7 @@ namespace orange {
 
     // zip_val
     template<typename ... Rs
-            , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
     auto
     zip_val(Rs && ... rs) {
@@ -1233,7 +1224,7 @@ namespace orange {
 
     // zip_ref
     template< typename ... Rs
-            , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
     auto
     zip_ref(Rs && ... rs) {
@@ -1244,7 +1235,7 @@ namespace orange {
 
     // zip - use front_ref where possible, front_val otherwise, different for each sub-range
     template< typename ... Rs
-            , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
     auto
     zip(Rs && ... rs) {
@@ -1254,7 +1245,7 @@ namespace orange {
 
     // If 'zip', 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
     template<typename ... Rs
-            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
             > auto
     zip_val(Rs && ... rs)
     -> decltype(auto)
@@ -1262,7 +1253,7 @@ namespace orange {
         return zip_val( orange::as_range(std::forward<Rs>(rs))...) ;
     }
     template<typename ... Rs
-            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
             > auto
     zip_ref(Rs && ... rs)
     -> decltype(auto)
@@ -1270,7 +1261,7 @@ namespace orange {
         return zip_ref( orange::as_range(std::forward<Rs>(rs))...) ;
     }
     template<typename ... Rs
-            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
             > auto
     zip(Rs && ... rs)
     -> decltype(auto)
