@@ -805,24 +805,33 @@ namespace orange {
      */
     template<typename C>
     struct owning_range_for_stdarray { // non-copyable
+        using element_type = std::remove_reference_t<decltype(std::declval<C&>().front())>; // instead of '::value_type' as we might need to respect const
         constexpr static size_t N = std::tuple_size<C>::value;
 
         static_assert(!std::is_reference<C>{}   ,"");
-        static_assert( std::is_const<C>{}   ,"");
         static_assert(!is_range_v<C>            ,"");
 
         using R = decltype( as_range(std::declval<C&>()) );
         static_assert(!std::is_reference<R>{} ,"");
         static_assert( is_range_v<R>            ,"");
 
-        C m_c;
         size_t m_current_offset;
+        element_type m_array[N];
 
-
+        template<size_t ... Indices>
         constexpr
-        owning_range_for_stdarray    (C && c) // takes only an rvalue reference, *not* a universal reference
-        : m_c(std::move(c))
-        , m_current_offset(0)
+        owning_range_for_stdarray    (C const && c, std::index_sequence<Indices...>)
+        : m_current_offset(0)
+        , m_array{c.at(Indices)...}
+        {
+        }
+
+
+        // the constructor delegates to a 'delegating constructor' in order
+        // to get the Indices [0..N) into a parameter pack.
+        constexpr
+        owning_range_for_stdarray    (C const && c) // takes only an rvalue reference, *not* a universal reference
+        : owning_range_for_stdarray(std::move(c), std::make_index_sequence<N>())
         {}
 
         // don't allow this to be copied
@@ -850,7 +859,7 @@ namespace orange {
         orange_front_ref  (M &m)
         ->decltype(auto)
         {
-            return m.m_c.at(m.m_current_offset);
+            return m.m_array[m.m_current_offset];
         }
     };
     template< typename T
