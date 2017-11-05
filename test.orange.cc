@@ -161,14 +161,21 @@ int main () {
     }
     {
         // sorting in place
-        int ai[] = {4,8,2,9,3,7};
+        int ai[] = {4,7,2,9,3,7};
         char ac[] = {'h','e','l','l','o'};
         double ad[] = {0.1,0.01,0.001};
         PP(ai| collect);
         auto ar = zip(ai, ac, ad);
-        begin(ar);
+        auto b = begin(ar);
         auto e = end(ar);
         PP(e.m_offset);
+        //std:: sort(b, e);
         //std::sort(begin(ar), end(ar));
+        auto B = *b;
+        print_type(B);
+        while(b != e) {
+            PP(*b);
+            ++b;
+        }
     }
 }
