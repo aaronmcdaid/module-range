@@ -808,6 +808,7 @@ namespace orange {
         constexpr static size_t N = std::tuple_size<C>::value;
 
         static_assert(!std::is_reference<C>{}   ,"");
+        static_assert( std::is_const<C>{}   ,"");
         static_assert(!is_range_v<C>            ,"");
 
         using R = decltype( as_range(std::declval<C&>()) );
