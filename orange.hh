@@ -866,6 +866,15 @@ namespace orange {
             , size_t N
             >
     auto constexpr
+    as_range(std::array<T,N> && t)
+    {
+        using ArrayType = std::array<T,N>;
+        return owning_range_for_stdarray< std::array<T,N> >{ std::forward<ArrayType>(t) };
+    }
+    template< typename T
+            , size_t N
+            >
+    auto constexpr
     as_crange(std::array<T,N> && t)
     {
         using ArrayType = std::array<T,N>;
