@@ -1340,6 +1340,25 @@ namespace orange {
         -> decltype(auto)
         { return orange::front_val(std::template get<Index>(z.m_ranges)); }
 
+        template<typename Z>
+        struct orange_zip_iterator {
+            Z & m_z_reference;
+            int m_offset;
+
+            decltype(auto) operator != (orange_zip_iterator const & other) const { return this->m_offset != other.m_offset; }
+            decltype(auto) operator -  (orange_zip_iterator const & other) const { return this->m_offset -  other.m_offset; }
+            decltype(auto) operator <  (orange_zip_iterator const & other) const { return this->m_offset <  other.m_offset; }
+            decltype(auto) operator =  (orange_zip_iterator const & other)       { this->m_offset =  other.m_offset; return *this; }
+            decltype(auto) operator ++ ()                                        { ++ this->m_offset ;               return *this; }
+            decltype(auto) operator +  (int jump)                          const { return orange_zip_iterator{m_z_reference, m_offset + jump};}
+            decltype(auto) operator *  ()                                  const { return dereference_helper(std::make_index_sequence<Z::width>{}); }
+            template<size_t ... Indices>
+            decltype(auto)
+            dereference_helper         (std::index_sequence<Indices...>)   const
+            {
+                return std::make_tuple( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... );
+            }
+        };
 
         template<typename Z>
         struct zip_helper { // This is to replace a capturing lambda. The only reason is that this is constexpr
@@ -1386,25 +1405,6 @@ namespace orange {
             return zip_helper<Z>{z}.zip_front_val(std::make_index_sequence<N>());
         }
 
-        template<typename Z>
-        struct orange_zip_iterator {
-            Z & m_z_reference;
-            int m_offset;
-
-            decltype(auto) operator != (orange_zip_iterator const & other) const { return this->m_offset != other.m_offset; }
-            decltype(auto) operator -  (orange_zip_iterator const & other) const { return this->m_offset -  other.m_offset; }
-            decltype(auto) operator <  (orange_zip_iterator const & other) const { return this->m_offset <  other.m_offset; }
-            decltype(auto) operator =  (orange_zip_iterator const & other)       { this->m_offset =  other.m_offset; return *this; }
-            decltype(auto) operator ++ ()                                        { ++ this->m_offset ;               return *this; }
-            decltype(auto) operator +  (int jump)                          const { return orange_zip_iterator{m_z_reference, m_offset + jump};}
-            decltype(auto) operator *  ()                                  const { return dereference_helper(std::make_index_sequence<Z::width>{}); }
-            template<size_t ... Indices>
-            decltype(auto)
-            dereference_helper         (std::index_sequence<Indices...>)   const
-            {
-                return std::make_tuple( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... );
-            }
-        };
         template<typename Z> static constexpr decltype(auto)
         orange_begin      (Z & z)   {
             return orange_zip_iterator<Z>{z, 0};

@@ -169,7 +169,6 @@ int main () {
         auto b = begin(ar);
         auto e = end(ar);
         PP(e.m_offset);
-        //std:: sort(b, e);
         //std::sort(begin(ar), end(ar));
         auto B = *b;
         print_type(B);
@@ -177,5 +176,7 @@ int main () {
             PP(*b);
             ++b;
         }
+
+        //std:: sort(begin(ar), end(ar));
     }
 }
