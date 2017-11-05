@@ -203,6 +203,14 @@ namespace orange_utils {
         static_assert( has_size_method< std::vector<int> > ,"");
         static_assert(!has_size_method< int              > ,"");
     }
+
+    template <class F, std::size_t... I>
+    constexpr decltype(auto) apply_indices(F&& f, std::index_sequence<I...>)
+    {
+        return      std::forward<F>(f)
+                    (std::integral_constant<size_t,I>{}...);
+    }
+
 }
 
 namespace orange {
