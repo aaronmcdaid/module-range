@@ -128,14 +128,14 @@ int main () {
         auto s = std::move(ar) | accumulate;
         PP(s);
         constexpr
-        auto ar2 = as_crange( std::array<int, 3> {{ 1,2,3 }} );
+        auto ar2 = as_range( std::array<int, 3> {{ 1,2,3 }} );
         auto p = &orange:: front_ref(ar2);
         PP(p);
         auto ar2_front =
         orange:: front_ref(ar2);
         PP(ar2_front);
         constexpr
-        auto yz = as_crange( std::array<double, 4> {{ 1.0,2.5,2.5,4.0 }} ) | accumulate;
+        auto yz = as_range( std::array<double, 4> {{ 1.0,2.5,2.5,4.0 }} ) | accumulate;
         static_assert(yz == 10,"");
     }
     {

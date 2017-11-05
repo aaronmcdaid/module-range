@@ -916,15 +916,6 @@ namespace orange {
         using ArrayType = std::array<T,N>;
         return owning_range_for_stdarray< std::array<T,N> >{ std::forward<ArrayType>(t) };
     }
-    template< typename T
-            , size_t N
-            >
-    auto constexpr
-    as_crange(std::array<T,N> && t)
-    {
-        using ArrayType = std::array<T,N>;
-        return owning_range_for_stdarray< const std::array<T,N> >{ std::forward<ArrayType>(t) };
-    }
 
 
     /*
@@ -1314,7 +1305,6 @@ namespace orange {
 
     }
     namespace testing_namespace{
-        static_assert(10.1 == (as_crange( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(10.1 == (as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         //static_assert(60 == (as_range( (int[]){10,20,30} ) | accumulate) ,""); // crashes gcc. No worries though, 'shouldbe330' works OK in its place
 
