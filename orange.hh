@@ -119,6 +119,7 @@
 #include<functional>
 #include<tuple>
 #include<vector>
+#include<limits>
 
 /*
  * orange_utils
@@ -547,6 +548,9 @@ namespace orange {
     inline
     constexpr
     pair_of_values<int> ints(int l, int u) { return {l,u}; }
+    inline
+    constexpr
+    pair_of_values<int> ints() { return {0,std::numeric_limits<int>::max()}; }
 
 
 
