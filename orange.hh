@@ -176,6 +176,8 @@ namespace orange_utils {
 
     using impl__is_invokable:: is_invokable_v;  // to 'export' this to the orange_utils namespace
 
+    template<typename ... Ts>
+    void ignore(Ts && ...) {}
 
     /* testing_namespace
      * =================
