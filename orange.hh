@@ -1093,7 +1093,6 @@ namespace orange {
     struct zip_t {
         static_assert( all_true( std::is_same<Rs, std::decay_t<Rs>>{}   ... ),"");
         static_assert( all_true(  is_range_v<Rs>                        ... ),"");
-        static_assert( all_true( has_trait_front_val<Rs>                ... ),"");
 
         constexpr static size_t N = sizeof...(Rs);
 
@@ -1132,7 +1131,10 @@ namespace orange {
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
-        { return orange::front_val(std::template get<Index>(z.m_ranges)); }
+        {
+            static_assert( all_true( has_trait_front_ref<Rs> || has_trait_front_val<Rs>     ... ),"Can't use 'zip_val' as every zipped range need at least 'front_val' or 'front_ref'");
+            return orange::front_val(std::template get<Index>(z.m_ranges));
+        }
         template< size_t Index
                 , typename Z
                 , enum_zip_policy_on_references my_policy_deduced = my_policy
@@ -1140,7 +1142,10 @@ namespace orange {
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
-        { return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges))); }
+        {
+            static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
+            return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges)));
+        }
 
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
@@ -1161,10 +1166,10 @@ namespace orange {
 
     template< typename ... Rs
             , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
-            , std::enable_if_t< all_true(has_trait_front_ref<Rs>...) >* =nullptr
             >
     auto
     zip_ref(Rs && ... rs) {
+        static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
         return  zip_t<enum_zip_policy_on_references:: always_references, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
     }
