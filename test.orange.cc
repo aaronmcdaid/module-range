@@ -8,8 +8,8 @@ using std:: string;
 using namespace orange;
 using utils:: operator<<;
 
-template<typename T>
-void print_type(T&&) {
+template<typename ... T>
+void print_type(T && ...) {
     std::cout << __PRETTY_FUNCTION__ << '\n';
 }
 
