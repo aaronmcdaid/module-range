@@ -102,5 +102,12 @@ int main () {
             orange::advance(zr);
         }
 
+        zip_ref (   std:: vector<int>{7,6,5,4}
+                ,   std:: vector<char>{'a','b','c','d'}
+                )
+            |foreach|
+                [](auto && t) { PP(t); }
+        ;
+
     }
 }
