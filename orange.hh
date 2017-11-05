@@ -116,6 +116,7 @@
  */
 
 #include<utility>
+#include<tuple>
 #include<vector>
 
 /*
@@ -1071,6 +1072,54 @@ namespace orange {
             return all_true(std::forward<Ts>(ts)...);
         else
             return false;
+    }
+
+
+    /*
+     * zip
+     * ===
+     */
+    template<typename ... Rs >
+    struct zip_val_t {
+        static_assert( all_true( std::is_same<Rs, std::decay_t<Rs>>{}   ... ),"");
+        static_assert( all_true(  is_range_v<Rs>                        ... ),"");
+        static_assert( all_true( has_trait_front_val<Rs>                ... ),"");
+
+        std:: tuple<std::decay_t<Rs>...> m_ranges;
+
+        template<typename ... Ts>
+        zip_val_t(Ts && ... ts) : m_ranges(std::forward<Ts>(ts)...) {}
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename Z> static constexpr auto
+        orange_empty        (Z &  z)    ->decltype(auto)
+        {   return orange_utils:: apply_indices
+            (   [&z](auto  ... Is)
+                { return   !all_true(!orange::empty ( std::template get<Is>(z.m_ranges)) ... ); }
+            ,   std::make_index_sequence<3>());
+        }
+
+        template<typename Z> static constexpr auto
+        orange_advance      (Z &  z)    ->void
+        {   return orange_utils:: apply_indices
+            (   [&z](auto  ... Is)
+                { orange_utils:: ignore(( orange::advance ( std::template get<Is>(z.m_ranges)) ,0)...); }
+            ,   std::make_index_sequence<3>());
+        }
+
+        template<typename Z> static constexpr auto
+        orange_front_val    (Z &  z)    ->decltype(auto)
+        {   return orange_utils:: apply_indices
+            (   [&z](auto  ... Is)
+                { return std::make_tuple(orange::front_val(std::template get<Is>(z.m_ranges))...); }
+            ,   std::make_index_sequence<3>());
+        }
+    };
+    template<typename ... Rs >
+    auto
+    zip_val(Rs && ... rs) {
+        return  zip_val_t<std::decay_t<Rs>...>
+                ( std::forward<Rs>(rs)...) ;
     }
 
 } // namespace orange
