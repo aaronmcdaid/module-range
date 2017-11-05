@@ -410,7 +410,9 @@ namespace orange {
     { return lookup_traits<R>::pull     (r); }
 
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&> )
+            , SFINAE_ENABLE_IF_CHECK(( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
+                    && !std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
+                    ))
             >
     auto constexpr
     pull       (R       &r)
@@ -418,6 +420,18 @@ namespace orange {
         auto copy = lookup_traits<R>::front_val(r);
         lookup_traits<R>::advance(r);
         return copy;
+    }
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
+                    &&  std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
+                    )
+            >
+    auto constexpr
+    pull       (R       &r)
+    -> void
+    {
+        lookup_traits<R>::front_val(r);
+        lookup_traits<R>::advance(r);
     }
 
     template<typename R
