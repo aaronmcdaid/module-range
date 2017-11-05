@@ -1084,7 +1084,12 @@ namespace orange {
      * zip
      * ===
      */
-    template<typename ... Rs >
+    enum class enum_zip_policy_on_references
+                {   values_only
+                ,   always_references
+                ,   mixture };
+    template< enum_zip_policy_on_references
+            , typename ... Rs >
     struct zip_val_t {
         static_assert( all_true( std::is_same<Rs, std::decay_t<Rs>>{}   ... ),"");
         static_assert( all_true(  is_range_v<Rs>                        ... ),"");
@@ -1120,18 +1125,27 @@ namespace orange {
             ,   std::make_index_sequence<N>());
         }
 
+        template< size_t Index
+                , typename Z
+                > static constexpr auto
+        get_one_item_to_return(Z & z)
+        -> decltype(auto)
+        { return orange::front_val(std::template get<Index>(z.m_ranges)); }
+
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
         {   return orange_utils:: apply_indices
             (   [&z](auto  ... Is)
-                { return std::make_tuple(orange::front_val(std::template get<Is>(z.m_ranges))...); }
+                { return std::make_tuple(zip_val_t:: get_one_item_to_return<decltype(Is)::value>(z)...); }
+                // zip_val { return std::make_tuple(orange::front_val(std::template get<Is>(z.m_ranges))...); }
+                // zip_ref { return std::make_tuple(std::ref(orange::front_ref(std::template get<Is>(z.m_ranges)))...); } // a tuple of references
             ,   std::make_index_sequence<N>());
         }
     };
     template<typename ... Rs >
     auto
     zip_val(Rs && ... rs) {
-        return  zip_val_t<std::decay_t<Rs>...>
+        return  zip_val_t<enum_zip_policy_on_references :: values_only, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
     }
 
