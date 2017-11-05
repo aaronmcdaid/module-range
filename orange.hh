@@ -1088,10 +1088,16 @@ namespace orange {
 
         constexpr static size_t N = sizeof...(Rs);
 
-        std:: tuple<std::decay_t<Rs>...> m_ranges;
+        using type_of_tuple = std:: tuple<std::decay_t<Rs>...>;
+        type_of_tuple m_ranges;
 
-        template<typename ... Ts>
+        template<typename ... Ts
+                , decltype(void( type_of_tuple(std::declval<Ts>()...) )) * =nullptr
+                >
         zip_val_t(Ts && ... ts) : m_ranges(std::forward<Ts>(ts)...) {}
+
+        zip_val_t(zip_val_t const &) = default;
+        zip_val_t(zip_val_t      &&) = default;
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
         template<typename Z> static constexpr auto
