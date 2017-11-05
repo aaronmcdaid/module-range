@@ -161,9 +161,9 @@
   *     bool i_am_an_lvalue(T&&)
   *     { return true; }
   */
-#define SFINAE_ENABLE_IF_CHECK(boolean_condition)                                       \
+#define SFINAE_ENABLE_IF_CHECK(...)                                       \
               typename ...                                                              \
-            , bool hidden_test_expression_for_enable_if = (boolean_condition)           \
+            , bool hidden_test_expression_for_enable_if = (__VA_ARGS__)           \
             , std::enable_if_t<hidden_test_expression_for_enable_if, std:: integral_constant<size_t, __LINE__> >* =nullptr
 
 /*
