@@ -766,6 +766,8 @@ namespace orange {
                                         constexpr   tagger_t<map_tag_t          >   mapr;
     struct collect_tag_t{constexpr collect_tag_t(){}};
                                         constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
+    struct discard_collect_tag_t{constexpr discard_collect_tag_t(){}};
+                                        constexpr            discard_collect_tag_t  discard_collect;    // no need for 'tagger_t', this directly runs
     struct accumulate_tag_t{constexpr accumulate_tag_t(){}};
                                         constexpr            accumulate_tag_t       accumulate;    // no need for 'tagger_t', this directly runs
 
@@ -927,6 +929,8 @@ namespace orange {
         return res;
     }
 
+
+    // |collect|
     template<typename R
             , typename Rnonref = std::remove_reference_t<R>
             , SFINAE_ENABLE_IF_CHECK( is_range_v<Rnonref> )
@@ -946,13 +950,30 @@ namespace orange {
     }
 
 
+    // |discard_collect|
+    template<typename R
+            , typename Rnonref = std::remove_reference_t<R>
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<Rnonref> )
+            >
+    void constexpr
+    operator| (R r, discard_collect_tag_t) {
+        static_assert( is_range_v<R> ,"");
+
+        while(!orange::empty(r))
+        { orange::pull(r); }
+
+    }
+
+
     // next, forward 'collect' and 'accumulate' via 'as_range()' if the lhs is not a range
     template<typename R
         , typename Tag
         , typename Rnonref = std::remove_reference_t<R>
         , SFINAE_ENABLE_IF_CHECK(   !is_range_v<Rnonref>
                                  && (   std::is_same<Tag, collect_tag_t>{}
-                                     || std::is_same<Tag, accumulate_tag_t>{}))
+                                     || std::is_same<Tag, discard_collect_tag_t>{}
+                                     || std::is_same<Tag, accumulate_tag_t>{}
+                                    ))
         >
     auto constexpr
     operator| (R && r, Tag operation) {
