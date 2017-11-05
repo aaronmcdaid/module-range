@@ -713,6 +713,16 @@ namespace orange {
         T m_array[N];
         size_t m_offset;
 
+        // don't allow this to be copied
+        owning_range_for_ye_olde_C_array    (owning_range_for_ye_olde_C_array const &) = delete;
+        owning_range_for_ye_olde_C_array &  operator=  (owning_range_for_ye_olde_C_array const &) = delete;
+
+        // ... but allow moving
+        constexpr
+        owning_range_for_ye_olde_C_array    (owning_range_for_ye_olde_C_array      &&) = default;
+        constexpr
+        owning_range_for_ye_olde_C_array &  operator=  (owning_range_for_ye_olde_C_array      &&) = default;
+
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
         template<typename M> static constexpr auto
         orange_empty      (M &m) ->bool             { return m.m_offset >= N;}
