@@ -84,13 +84,15 @@ int main () {
         }
         auto j = std::move(z);
 
-        auto zv =
         zip_val (   as_range(vi)
                 ,   as_range(vd)
-                );
-        auto zv2 = zv;
-        zv2 |foreach| [](auto && t){ PP(t); };
-        zv2 |foreach| [](auto && t){ PP(t); };
+                ,   ints()  )
+            |foreach|
+                [](auto && t)
+                {
+                    PP(t);
+                    print_type(t);
+                };
 
 
         auto zr = zip_ref( as_range(vd), as_range(vd) );
