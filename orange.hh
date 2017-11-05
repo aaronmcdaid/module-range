@@ -402,6 +402,8 @@ namespace orange {
      *  2. doesn't have 'pull' but does have 'front_val' and 'advance'
      *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
      */
+
+    // pull, via trait_pull
     template<typename R
             , SFINAE_ENABLE_IF_CHECK( has_trait_pull<R&> )
             >
@@ -409,6 +411,7 @@ namespace orange {
     pull       (R       &r)
     { return lookup_traits<R>::pull     (r); }
 
+    // pull, via front_val
     template<typename R
             , SFINAE_ENABLE_IF_CHECK(( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
                     && !std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
@@ -421,6 +424,8 @@ namespace orange {
         lookup_traits<R>::advance(r);
         return copy;
     }
+
+    // void version of pull, via front_val
     template<typename R
             , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
                     &&  std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
@@ -434,8 +439,11 @@ namespace orange {
         lookup_traits<R>::advance(r);
     }
 
+    // pull, via front_ref
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&> )
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
+                    && !std::is_same<void, decltype( lookup_traits<R>::front_ref(std::declval<R&>()) )>{}
+                    )
             >
     auto constexpr
     pull       (R       &r)
@@ -443,6 +451,20 @@ namespace orange {
         auto copy = lookup_traits<R>::front_ref(r);
         lookup_traits<R>::advance(r);
         return copy;
+    }
+
+    // void version for front_ref (actually, I guess front_ref should never return void!
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
+                    &&  std::is_same<void, decltype( lookup_traits<R>::front_ref(std::declval<R&>()) )>{}
+                    )
+            >
+    auto constexpr
+    pull       (R       &r)
+    ->void
+    {
+        lookup_traits<R>::front_ref(r);
+        lookup_traits<R>::advance(r);
     }
 }
 
