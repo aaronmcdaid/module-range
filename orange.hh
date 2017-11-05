@@ -117,6 +117,7 @@
 
 #include<utility>
 #include<functional>
+#include<algorithm> // for std::min
 #include<tuple>
 #include<vector>
 #include<limits>
@@ -1285,6 +1286,7 @@ namespace orange {
         static_assert( all_true(  is_range_v<Rs>                        ... ),"");
 
         constexpr static size_t N = sizeof...(Rs);
+        constexpr static size_t width = sizeof...(Rs);
 
         using type_of_tuple = std:: tuple<std::decay_t<Rs>...>;
         type_of_tuple m_ranges;
@@ -1382,6 +1384,26 @@ namespace orange {
         orange_front_val    (Z &  z)    ->decltype(auto)
         {
             return zip_helper<Z>{z}.zip_front_val(std::make_index_sequence<N>());
+        }
+
+        template<typename Z>
+        struct orange_zip_iterator {
+            Z & m_z_reference;
+            int m_offset;
+        };
+        template<typename Z> static constexpr decltype(auto)
+        orange_begin      (Z & z)   {
+            return orange_zip_iterator<Z>{z, 0};
+        }
+        template<typename Z
+                ,size_t ... Indices
+                > static constexpr decltype(auto)
+        orange_end_helper (Z & z, std::index_sequence<Indices...>)   {
+            return std::min ({  (end(std::get<Indices>(z.m_ranges))-begin(std::get<Indices>(z.m_ranges))) ...  });
+        }
+        template<typename Z> static constexpr decltype(auto)
+        orange_end        (Z & z)   {
+            return orange_zip_iterator<Z> { z, (int)orange_end_helper(z, std:: make_index_sequence<Z::width>()) };
         }
     };
 
