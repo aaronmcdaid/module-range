@@ -1099,9 +1099,7 @@ namespace orange {
         using type_of_tuple = std:: tuple<std::decay_t<Rs>...>;
         type_of_tuple m_ranges;
 
-        template<typename ... Ts
-                , decltype(void( type_of_tuple(std::declval<Ts>()...) )) * =nullptr
-                >
+        template< typename ... Ts >
         zip_t(Ts && ... ts) : m_ranges(std::forward<Ts>(ts)...) {}
 
         zip_t(zip_t const &) = default;
@@ -1157,7 +1155,10 @@ namespace orange {
             ,   std::make_index_sequence<N>());
         }
     };
-    template<typename ... Rs >
+
+    template<typename ... Rs
+            , std::enable_if_t< all_true(is_range_v<Rs>...) >* =nullptr
+            >
     auto
     zip_val(Rs && ... rs) {
         return  zip_t<enum_zip_policy_on_references :: values_only, std::decay_t<Rs>...>
@@ -1172,6 +1173,24 @@ namespace orange {
         static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
         return  zip_t<enum_zip_policy_on_references:: always_references, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
+    }
+
+    // If 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
+    template<typename ... Rs
+            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            > auto
+    zip_val(Rs && ... rs)
+    -> decltype(auto)
+    {
+        return zip_val( orange::as_range(std::forward<Rs>(rs))...) ;
+    }
+    template<typename ... Rs
+            , std::enable_if_t<!all_true(is_range_v<Rs>...) >* =nullptr
+            > auto
+    zip_ref(Rs && ... rs)
+    -> decltype(auto)
+    {
+        return zip_ref( orange::as_range(std::forward<Rs>(rs))...) ;
     }
 
     namespace testing_namespace {
