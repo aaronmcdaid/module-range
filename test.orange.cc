@@ -70,8 +70,6 @@ int main () {
     PP( as_range(std:: vector<int>{1,2,3}) | accumulate);
 
     {
-        assert(15 == orange:: testing_namespace:: zip_test());
-
         auto vi = std::vector<double>{102,102,101};
         auto vd = std::vector<double>{3.3,2.2,1.1};
         auto z =

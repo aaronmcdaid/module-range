@@ -1443,14 +1443,23 @@ namespace orange {
     }
 
     namespace testing_namespace {
+        template<typename T>
+        struct summer_t {
+            T & m_t;
+
+            template<typename Arg>
+            constexpr auto
+            operator() (Arg && x)
+            { m_t += std::get<0>(x) * std::get<1>(x); }
+        };
+        constexpr
         double zip_test() {
             int     i [] = {1,2,3};
             double  d [] = {1.0,2.5,3.0};
             double  t = 0.0;
-            zip_val( as_range(i), as_range(d) ) |foreach | [&t](auto x)
-                { t+=    std::get<0>(x) * std::get<1>(x);}
-            ;
-            return t; // 15.4
+            zip_val( i, d ) |foreach| summer_t<double>{t};
+            return t;
         }
+        static_assert(15 == orange:: testing_namespace:: zip_test() ,"");
     }
 } // namespace orange
