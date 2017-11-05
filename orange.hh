@@ -822,7 +822,7 @@ namespace orange {
         constexpr
         owning_range_for_stdarray    (C const && c, std::index_sequence<Indices...>)
         : m_current_offset(0)
-        , m_array{c.at(Indices)...}
+        , m_array{c.at(Indices)...} // no point using move here, as 'c' is 'const'
         {
         }
 
@@ -1308,6 +1308,14 @@ namespace orange {
         static_assert(10.1 == (as_crange( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(10.1 == (as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
+
+        constexpr
+        double modifying_the_owning_stdarray() {
+            auto r = as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} );
+            orange:: front_ref(r) += 1.0;
+            return std::move(r) | accumulate;
+        }
+        static_assert( 11.1 == modifying_the_owning_stdarray() , "");
 
         constexpr
         int foo() {
