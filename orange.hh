@@ -1085,6 +1085,8 @@ namespace orange {
         static_assert( all_true(  is_range_v<Rs>                        ... ),"");
         static_assert( all_true( has_trait_front_val<Rs>                ... ),"");
 
+        constexpr static size_t N = sizeof...(Rs);
+
         std:: tuple<std::decay_t<Rs>...> m_ranges;
 
         template<typename ... Ts>
@@ -1096,7 +1098,7 @@ namespace orange {
         {   return orange_utils:: apply_indices
             (   [&z](auto  ... Is)
                 { return   !all_true(!orange::empty ( std::template get<Is>(z.m_ranges)) ... ); }
-            ,   std::make_index_sequence<3>());
+            ,   std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
@@ -1104,7 +1106,7 @@ namespace orange {
         {   return orange_utils:: apply_indices
             (   [&z](auto  ... Is)
                 { orange_utils:: ignore(( orange::advance ( std::template get<Is>(z.m_ranges)) ,0)...); }
-            ,   std::make_index_sequence<3>());
+            ,   std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
@@ -1112,7 +1114,7 @@ namespace orange {
         {   return orange_utils:: apply_indices
             (   [&z](auto  ... Is)
                 { return std::make_tuple(orange::front_val(std::template get<Is>(z.m_ranges))...); }
-            ,   std::make_index_sequence<3>());
+            ,   std::make_index_sequence<N>());
         }
     };
     template<typename ... Rs >
