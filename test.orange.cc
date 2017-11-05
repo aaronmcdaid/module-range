@@ -7,6 +7,12 @@ using std:: vector;
 using std:: string;
 using namespace orange;
 using utils:: operator<<;
+
+template<typename T>
+void print_type(T&&) {
+    std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
 int main () {
     auto r_i = ints(3);
     while(!empty(r_i)) {
@@ -62,4 +68,19 @@ int main () {
 
     PP( as_range(std:: vector<int>{1,2,3}) | accumulate);
 
+    {
+        auto vd = std::vector<double>{3.3,2.2,1.1};
+        auto z =
+        zip_val (   as_range(std::vector<int>{3,2,1})
+                ,   as_range(std::vector<std::string>{"three","two","one"})
+                ,   as_range(vd)
+                );
+        while(!orange::empty(z)) {
+            PP(orange::front_val(z));
+            orange::advance(z);
+        }
+
+        assert(15 == orange:: testing_namespace:: zip_test());
+
+    }
 }

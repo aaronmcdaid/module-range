@@ -1124,4 +1124,15 @@ namespace orange {
                 ( std::forward<Rs>(rs)...) ;
     }
 
+    namespace testing_namespace {
+        double zip_test() {
+            int     i [] = {1,2,3};
+            double  d [] = {1.0,2.5,3.0};
+            double  t = 0.0;
+            zip_val( as_range(i), as_range(d) ) |foreach | [&t](auto x)
+                { t+=    std::get<0>(x) * std::get<1>(x);}
+            ;
+            return t; // 15.4
+        }
+    }
 } // namespace orange
