@@ -970,7 +970,7 @@ namespace orange {
                 {
                     return
                     m.m_f(
-                        orange::front_ref ( std::template get<Is>(m.m_r.m_ranges)) ...
+                        orange::front     ( std::template get<Is>(m.m_r.m_ranges)) ...
                     )
                     ;
                 }
