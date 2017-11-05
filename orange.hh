@@ -259,6 +259,7 @@ namespace orange_utils {
                     (std::integral_constant<size_t,I>{}...);
     }
 
+
 }
 
 namespace orange {
@@ -841,6 +842,20 @@ namespace orange {
 
 
 
+    /*
+     * all_true
+     */
+    constexpr bool
+    all_true(void) {return true;}
+    template<typename ...Ts>
+    constexpr bool
+    all_true(bool b, Ts && ... ts) {
+        if(b)
+            return all_true(std::forward<Ts>(ts)...);
+        else
+            return false;
+    }
+
 
     /*
      * Now, to start defining the various  |operations|
@@ -1159,21 +1174,6 @@ namespace orange {
             return x | accumulate;
         }
         static_assert(24 == test_as_range_conversions() ,"");
-    }
-
-
-    /*
-     * all_true
-     */
-    constexpr bool
-    all_true(void) {return true;}
-    template<typename ...Ts>
-    constexpr bool
-    all_true(bool b, Ts && ... ts) {
-        if(b)
-            return all_true(std::forward<Ts>(ts)...);
-        else
-            return false;
     }
 
 
