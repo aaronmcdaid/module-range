@@ -777,11 +777,11 @@ namespace orange {
     }
     template<typename R, typename Func
         , std::enable_if_t<
-        !has_trait_front_ref<R> && has_trait_pull<R>
+        !has_trait_front_ref<R>
         > * = nullptr >
     constexpr auto
     operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
-    -> void
+    -> decltype( orange::pull(r.m_r), (void)0 ) // void, but SFINAE on 'pull' first
     {
         while(!orange::empty(r.m_r)) {
             func(orange::pull(r.m_r));
