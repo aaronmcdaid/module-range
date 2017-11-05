@@ -121,6 +121,50 @@
 #include<vector>
 #include<limits>
 
+ /* SFINAE_ENABLE_IF_CHECK
+  * ======================
+  *     Sorry for the macro, but this macro is just too useful! It has two
+  * extra 'features' over and above a straightforward enable_if.
+  *
+  * Here is a simple conventional use of enable_if in a function template:
+  *
+  *     template<typename T
+  *             , std::enable_if_t< std::is_lvalue_reference<T>{} >* =nullptr
+  *             >
+  *     bool i_am_an_lvalue(T&&)
+  *     { return true; }
+  *
+  * and I suggest this instead:
+  *
+  *     template<typename T
+  *             , SFINAE_ENABLE_IF_CHECK( std::is_lvalue_reference<T>{} )
+  *             >
+  *     bool i_am_an_lvalue(T&&)
+  *     { return true; }
+  *
+  * for these two reasons:
+  *  1) two overloads with very similar signatures can clash with each other,
+  *     even when we know only one will satisfy the condition, causing an error.
+  *     This macro solves this by building the line number (__LINE__) into the
+  *     pointer type.
+  *  2) If the condition is not deduced, then the conventional method will give
+  *     an error. For example, if it's a template parameter in an outer struct.
+  *     This macro solves this by separating the condition into two template
+  *     parameters (hence the comma in the macro, to separate the args).
+  *     Hence, the previous code expands to the following, which works because
+  *     the boolean is merely given a default value, which is then tested:
+  *
+  *     template<typename T
+  *           bool hidden_test_expression_for_enable_if = ( std::is_lvalue_reference<T>{} )
+  *         , std::enable_if_t<hidden_test_expression_for_enable_if, std:: integral_constant<size_t, __LINE__> >* =nullptr
+  *             >
+  *     bool i_am_an_lvalue(T&&)
+  *     { return true; }
+  */
+#define SFINAE_ENABLE_IF_CHECK(boolean_condition)                                       \
+              bool hidden_test_expression_for_enable_if = (boolean_condition)       \
+            , std::enable_if_t<hidden_test_expression_for_enable_if, std:: integral_constant<size_t, __LINE__> >* =nullptr
+
 /*
  * orange_utils
  *
@@ -1149,20 +1193,18 @@ namespace orange {
         }
         template< size_t Index
                 , typename Z
-                , enum_zip_policy_on_references my_policy_deduced = my_policy
-                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: mixture >* =nullptr
                 , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
-                , std::enable_if_t< has_trait_front_ref<subR> >* = nullptr
+                , SFINAE_ENABLE_IF_CHECK (   my_policy == enum_zip_policy_on_references:: mixture
+                                          && has_trait_front_ref<subR>)
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
         { return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges))); }
         template< size_t Index
                 , typename Z
-                , enum_zip_policy_on_references my_policy_deduced = my_policy
-                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: mixture >* =nullptr
                 , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
-                , std::enable_if_t<!has_trait_front_ref<subR> >* = nullptr
+                , SFINAE_ENABLE_IF_CHECK (   my_policy == enum_zip_policy_on_references:: mixture
+                                          &&!has_trait_front_ref<subR>)
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
