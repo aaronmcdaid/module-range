@@ -107,17 +107,34 @@ int main () {
             |foreach|
                 [](auto && t) { PP(t); }
         ;
+        auto unzipped =
         zip     (   std:: vector<int>{7,6,5,4}
                 ,   as_range(std:: vector<char>{'a','b','c','d'})
                 ,   ints()
                 )
-            |mapr|
-                [](auto && tz) {
-                    print_type(tz);
-                    PP(tz);
+            |unzip_map|
+                [](auto && ... tz) {
+                    print_type(std::forward<decltype(tz)>(tz)...);
+                    PP(std::make_tuple(std::forward<decltype(tz)>(tz)...));
+                    return 7.3;
                 }
-            |discard_collect
-        ;
+            |collect ;
+        PP(unzipped);
 
+    }
+    {
+        auto ar = as_range( std::array<int, 3> {{ 1,2,3 }} );
+        auto s = std::move(ar) | accumulate;
+        PP(s);
+        constexpr
+        auto ar2 = as_crange( std::array<int, 3> {{ 1,2,3 }} );
+        auto p = &orange:: front_ref(ar2);
+        PP(p);
+        auto ar2_front =
+        orange:: front_ref(ar2);
+        PP(ar2_front);
+        constexpr
+        auto yz = as_crange( std::array<double, 4> {{ 1.0,2.5,2.5,4.0 }} ) | accumulate;
+        static_assert(yz == 10,"");
     }
 }
