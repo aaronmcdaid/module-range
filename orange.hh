@@ -1151,12 +1151,22 @@ namespace orange {
                 , typename Z
                 , enum_zip_policy_on_references my_policy_deduced = my_policy
                 , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: mixture >* =nullptr
+                , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
+                , std::enable_if_t< has_trait_front_ref<subR> >* = nullptr
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
-        {
-            return orange::front_val(std::template get<Index>(z.m_ranges));
-        }
+        { return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges))); }
+        template< size_t Index
+                , typename Z
+                , enum_zip_policy_on_references my_policy_deduced = my_policy
+                , std::enable_if_t< my_policy_deduced == enum_zip_policy_on_references:: mixture >* =nullptr
+                , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
+                , std::enable_if_t<!has_trait_front_ref<subR> >* = nullptr
+                > static constexpr auto
+        get_one_item_to_return(Z & z)
+        -> decltype(auto)
+        { return orange::front_val(std::template get<Index>(z.m_ranges)); }
 
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
