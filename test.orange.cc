@@ -69,6 +69,9 @@ int main () {
     PP( as_range(std:: vector<int>{1,2,3}) | accumulate);
 
     {
+        assert(15 == orange:: testing_namespace:: zip_test());
+
+        auto vi = std::vector<double>{102,102,101};
         auto vd = std::vector<double>{3.3,2.2,1.1};
         auto z =
         zip_val (   as_range(std::vector<int>{3,2,1})
@@ -79,8 +82,16 @@ int main () {
             PP(orange::front_val(z));
             orange::advance(z);
         }
+        auto j = std::move(z);
 
-        assert(15 == orange:: testing_namespace:: zip_test());
+        auto zv =
+        zip_val (   as_range(vi)
+                ,   as_range(vd)
+                );
+        auto zv2 = zv;
+        zv2 |foreach| [](auto && t){ PP(t); };
+        zv2 |foreach| [](auto && t){ PP(t); };
+
 
         auto zr = zip_ref( as_range(vd), as_range(vd) );
         while(!orange::empty(zr)) {
