@@ -708,6 +708,41 @@ namespace orange {
     -> pair_of_iterators< T*, T* >
     { return {std::begin(v),std::end(v)}; }
 
+    template<typename T, size_t N>
+    struct owning_range_for_ye_olde_C_array {
+        T m_array[N];
+        size_t m_offset;
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename M> static constexpr auto
+        orange_empty      (M &m) ->bool             { return m.m_offset >= N;}
+        template<typename M> static constexpr auto
+        orange_advance    (M &m) ->void             { ++m.m_offset; }
+        template<typename M> static constexpr auto
+        orange_front_ref  (M &m) ->decltype(auto)   { return m.m_array[m.m_offset]; }
+    };
+
+
+    // an rvalue array. We need a helper function first though:
+    template <typename T, std:: size_t N, std:: size_t ... Indices>
+    auto constexpr
+    as_range_helper_for_rvalue_plain_C_arrays   ( T (&&a)[N]
+                                                , std::index_sequence<Indices...>
+                                                )
+    -> owning_range_for_ye_olde_C_array<T,N>
+    { return {{ std::move(a[Indices]) ... },0}; }
+
+    // for rvalue-array, we copy the array via the helper above and then we
+    // can store it in a special type, 'owning_range_for_ye_olde_C_array',
+    // that knows how to place nice inside 'constexpr'.
+    template <typename T, std:: size_t N>
+    auto constexpr
+    as_range(T (&&a)[N])
+    -> owning_range_for_ye_olde_C_array<T,N>
+    {
+        return as_range_helper_for_rvalue_plain_C_arrays(std::move(a), std::make_index_sequence<N>());
+    }
+
     // two iterators as arguments
     template <typename T>
     auto constexpr
@@ -1331,6 +1366,14 @@ namespace orange {
             return x | accumulate;
         }
         static_assert(24 == test_as_range_conversions() ,"");
+
+        constexpr
+        int bar() {
+            int ai []{ 10,11,12 };
+            return (ai | accumulate)
+                   + (as_range( (int[]) { 100,110,120 } ) | accumulate);
+        }
+        static_assert(363 == bar() ,"");
     }
 
 
