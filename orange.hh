@@ -799,6 +799,7 @@ namespace orange {
     struct filter_tag_t         {};     constexpr   tagger_t<filter_tag_t       >   filter;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
+    struct unzip_map_tag_t      {};     constexpr   tagger_t<unzip_map_tag_t    >   unzip_map;
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
     struct collect_tag_t{constexpr collect_tag_t(){}};
@@ -911,6 +912,53 @@ namespace orange {
     auto constexpr
     operator| (forward_this_with_a_tag<R,map_tag_t> f, Func && func) {
         return mapping_range<   std::remove_reference_t<R>      // so we store it by value
+                            ,   std::remove_reference_t<Func>
+                            > { std::move         (f.m_r)
+                              , std::forward<Func>(func)
+                              };
+    }
+
+
+    // |unzip_map|
+    template<typename R, typename F>
+    struct unzip_mapping_range {
+        static_assert(!std::is_reference<R>{},"");
+        static_assert(!std::is_reference<F>{},"");
+        static_assert( is_range_v<R>, "");
+        R m_r;
+        F m_f;
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename M> static constexpr bool
+        orange_empty      (M &m) { return orange:: empty(m.m_r);}
+        template<typename M> static constexpr void
+        orange_advance    (M &m) { orange::advance( m.m_r ) ;}
+        template<typename M> static constexpr auto
+        orange_front_val  (M &m)
+        {
+            constexpr size_t N = std::tuple_size<decltype(m.m_r.m_ranges)>::value;
+            (void)N;
+            //return m.m_f(orange::front_val  ( m.m_r ));
+            //*
+            orange_utils:: apply_indices
+            (   [&m](auto  ... Is) -> decltype(auto)
+                {
+                    return
+                    m.m_f(
+                        orange::front_ref ( std::template get<Is>(m.m_r.m_ranges)) ...
+                    )
+                    ;
+                }
+            ,   std::make_index_sequence<N>()
+            );
+            //*/
+        }
+    };
+
+    template<typename R, typename Func>
+    auto constexpr
+    operator| (forward_this_with_a_tag<R,unzip_map_tag_t> f, Func && func) {
+        return unzip_mapping_range<   std::remove_reference_t<R>      // so we store it by value
                             ,   std::remove_reference_t<Func>
                             > { std::move         (f.m_r)
                               , std::forward<Func>(func)
