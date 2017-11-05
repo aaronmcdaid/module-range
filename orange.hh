@@ -1305,7 +1305,8 @@ namespace orange {
 
     }
     namespace testing_namespace{
-        static_assert(10.1 == (as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
+        constexpr double shouldbe10_1() { return as_range ( (double[]) { 1.5,0.1,2.5,2,4 } ) | accumulate; }
+        static_assert(10.1 == shouldbe10_1() ,"");
         //static_assert(60 == (as_range( (int[]){10,20,30} ) | accumulate) ,""); // crashes gcc. No worries though, 'shouldbe330' works OK in its place
 
         constexpr int shouldbe330()
@@ -1314,7 +1315,7 @@ namespace orange {
 
         constexpr
         double modifying_the_owning_stdarray() {
-            auto r = as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} );
+            auto r = as_range ( (double[]) { 1.5,0.1,2.5,2,4 } );
             orange:: front_ref(r) += 1.0;
             return std::move(r) | accumulate;
         }
