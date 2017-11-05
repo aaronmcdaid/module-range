@@ -676,6 +676,9 @@ namespace orange {
         template<typename M> static constexpr auto
         orange_front_val  (M &m) ->decltype(auto)
         { return orange::front_val( m.m_r ) ;}
+        template<typename M> static constexpr auto
+        orange_front_ref  (M &m) ->decltype(auto)
+        { return orange::front_ref( m.m_r ) ;}
     };
 
     // as_range, for rvalues that aren't ranges. In this case, we wrap them
