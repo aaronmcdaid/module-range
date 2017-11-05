@@ -82,5 +82,12 @@ int main () {
 
         assert(15 == orange:: testing_namespace:: zip_test());
 
+        auto zr = zip_ref( as_range(vd), as_range(vd) );
+        while(!orange::empty(zr)) {
+            PP(orange::front_val(zr));
+            print_type(orange::front_val(zr));
+            orange::advance(zr);
+        }
+
     }
 }
