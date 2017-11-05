@@ -1298,23 +1298,6 @@ namespace orange {
         constexpr
         zip_t(zip_t      &&) = default;
 
-        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
-        template<typename Z> static constexpr auto
-        orange_empty        (Z &  z)    ->decltype(auto)
-        {   return orange_utils:: apply_indices
-            (   [&z](auto  ... Is)
-                { return   !all_true(!orange::empty ( std::template get<Is>(z.m_ranges)) ... ); }
-            ,   std::make_index_sequence<N>());
-        }
-
-        template<typename Z> static constexpr auto
-        orange_advance      (Z &  z)    ->void
-        {   return orange_utils:: apply_indices
-            (   [&z](auto  ... Is)
-                { orange_utils:: ignore(( orange::advance ( std::template get<Is>(z.m_ranges)) ,0)...); }
-            ,   std::make_index_sequence<N>());
-        }
-
         template< size_t Index
                 , typename Z
                 , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: values_only )
@@ -1355,14 +1338,50 @@ namespace orange {
         -> decltype(auto)
         { return orange::front_val(std::template get<Index>(z.m_ranges)); }
 
+
+        template<typename Z>
+        struct local_empty_checker { // This is to replace a capturing lambda. The only reason is that this is constexpr
+            Z & m_z;
+
+            template<size_t ... Indices> auto constexpr
+            zip_empty(std::index_sequence<Indices...>)
+            -> bool
+            {
+                return   !all_true(!orange::empty ( std::template get<Indices>(m_z.m_ranges)) ... );
+            }
+
+            template<size_t ... Indices> auto constexpr
+            zip_advance(std::index_sequence<Indices...>)
+            -> void
+            {
+                orange_utils:: ignore(( orange::advance ( std::template get<Indices>(m_z.m_ranges)) ,0)...);
+            }
+
+            template<size_t ... Indices> auto constexpr
+            zip_front_val(std::index_sequence<Indices...>)
+            -> decltype(auto)
+            {
+                return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...);
+            }
+        };
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename Z> static constexpr auto
+        orange_empty        (Z &  z)    ->decltype(auto)
+        {
+            return local_empty_checker<Z>{z}.zip_empty(std::make_index_sequence<N>());
+        }
+
+        template<typename Z> static constexpr auto
+        orange_advance      (Z &  z)    ->void
+        {
+            return local_empty_checker<Z>{z}.zip_advance(std::make_index_sequence<N>());
+        }
+
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
-        {   return orange_utils:: apply_indices
-            (   [&z](auto  ... Is)
-                { return std::make_tuple(zip_t:: get_one_item_to_return<decltype(Is)::value>(z)...); }
-                // zip_val { return std::make_tuple(orange::front_val(std::template get<Is>(z.m_ranges))...); }
-                // zip_ref { return std::make_tuple(std::ref(orange::front_ref(std::template get<Is>(z.m_ranges)))...); } // a tuple of references
-            ,   std::make_index_sequence<N>());
+        {
+            return local_empty_checker<Z>{z}.zip_front_val(std::make_index_sequence<N>());
         }
     };
 
