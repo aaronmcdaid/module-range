@@ -1289,23 +1289,6 @@ namespace orange {
         static_assert(30 == (ints(10) |filter| greater_than_5_t{}   |accumulate) ,"");
         static_assert(-30 == (ints(10) |filter| greater_than_5_t{} |mapr| negate_t{}   |accumulate) ,"");
 
-        template<typename T, std::size_t N>
-        struct orange_over_an_array
-        {   // This class is only useful in the constexpr tests. It's rubbish, but it plays nicely with
-            // constexpr. It's the only way I can think of to get generic data into a range.
-            T m_array[N];
-            using Tc = T const;
-            std:: size_t offset;
-
-            constexpr
-            auto empty() const { return offset >= N; }
-            constexpr
-            auto pull ()       { return m_array[offset++]; }
-            constexpr
-            T & front_ref ()       { return m_array[offset]; }
-            constexpr
-            T   front_val ()       { return m_array[offset]; }
-        };
 
         struct dummy_int_range_with_pull_and_empty_only {
             int m_i = 0;
@@ -1330,29 +1313,14 @@ namespace orange {
         static_assert( -7938 == orange:: testing_namespace:: foreach_testing1() ,"");
 
     }
-    // (dropping back up a namespace temporarily, just
-    // to define the trait for 'orange_over_an_array'
-    template<typename T, std::size_t N>
-    struct traits<testing_namespace:: orange_over_an_array<T,N>> {
-
-        template<typename RR>
-        static constexpr
-        decltype(auto) empty(RR & r) { return r.empty(); }
-
-        template<typename RR>
-        static constexpr
-        decltype(auto) pull(RR & r) { return r.pull(); }
-
-        template<typename RR>
-        static constexpr
-        decltype(auto)
-        front_ref(RR & r)
-        {   return r.front_ref(); }
-    };
     namespace testing_namespace{
         static_assert(10.1 == (as_crange( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(10.1 == (as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
-        static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
+        //static_assert(60 == (as_range( (int[]){10,20,30} ) | accumulate) ,""); // crashes gcc. No worries though, 'shouldbe330' works OK in its place
+
+        constexpr int shouldbe330()
+        { return as_range( (int[]) { 100,110,120 } ) | accumulate; }
+        static_assert(330 == shouldbe330() , "");
 
         constexpr
         double modifying_the_owning_stdarray() {
@@ -1364,9 +1332,9 @@ namespace orange {
 
         constexpr
         int foo() {
-            auto ooaa = orange_over_an_array<int, 3>({{10,20,30},0});
+            auto ooaa = as_range( (int[]) {10,20,30} );
             orange:: front_ref(ooaa) += 100;
-            return ooaa | accumulate;
+            return std::move(ooaa) | accumulate;
         }
         static_assert( 160 == foo() , "");
 
