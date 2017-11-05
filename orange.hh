@@ -796,6 +796,72 @@ namespace orange {
     }
 
 
+    /*
+     * owning_range_for_stdarray
+     * =========================
+     *  A special case for stdarray. It's identical to owning_range in every way,
+     *  but it's implemented in a slightly simpler manner which makes it suitable
+     *  for constexpr. Therefore, we can use it in our constexpr-testing.
+     */
+    template<typename C>
+    struct owning_range_for_stdarray { // non-copyable
+        constexpr static size_t N = std::tuple_size<C>::value;
+
+        static_assert(!std::is_reference<C>{}   ,"");
+        static_assert(!is_range_v<C>            ,"");
+
+        using R = decltype( as_range(std::declval<C&>()) );
+        static_assert(!std::is_reference<R>{} ,"");
+        static_assert( is_range_v<R>            ,"");
+
+        C m_c;
+        size_t m_current_offset;
+
+
+        constexpr
+        owning_range_for_stdarray    (C && c) // takes only an rvalue reference, *not* a universal reference
+        : m_c(std::move(c))
+        , m_current_offset(0)
+        {}
+
+        // don't allow this to be copied
+        owning_range_for_stdarray    (owning_range_for_stdarray const &) = delete;
+        owning_range_for_stdarray &  operator=  (owning_range_for_stdarray const &) = delete;
+
+        // ... but allow moving
+        constexpr
+        owning_range_for_stdarray    (owning_range_for_stdarray      &&) = default;
+        constexpr
+        owning_range_for_stdarray &  operator=  (owning_range_for_stdarray      &&) = default;
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename M> static constexpr auto
+        orange_empty      (M &m) ->bool
+        {
+            return m.m_current_offset >= N;
+        }
+        template<typename M> static constexpr auto
+        orange_advance    (M &m) ->void
+        {
+            ++m.m_current_offset;
+        }
+        template<typename M> static constexpr auto
+        orange_front_ref  (M &m)
+        ->decltype(auto)
+        {
+            return m.m_c.at(m.m_current_offset);
+        }
+    };
+    template< typename T
+            , size_t N
+            >
+    auto constexpr
+    as_crange(std::array<T,N> && t)
+    {
+        using ArrayType = std::array<T,N>;
+        return owning_range_for_stdarray< const std::array<T,N> >{ std::forward<ArrayType>(t) };
+    }
+
 
 
     /*
@@ -1221,6 +1287,7 @@ namespace orange {
         {   return r.front_ref(); }
     };
     namespace testing_namespace{
+        static_assert(10 == (as_crange( std::array<double, 4> {{ 1.5,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
 
         constexpr
