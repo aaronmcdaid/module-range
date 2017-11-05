@@ -82,7 +82,6 @@ int main () {
             PP(orange::front_val(z));
             orange::advance(z);
         }
-        auto j = std::move(z);
 
         zip_val (   as_range(vi)
                 ,   as_range(vd)
@@ -107,6 +106,16 @@ int main () {
                 )
             |foreach|
                 [](auto && t) { PP(t); }
+        ;
+        zip     (   std:: vector<int>{7,6,5,4}
+                ,   as_range(std:: vector<char>{'a','b','c','d'})
+                ,   ints(10)
+                )
+            |foreach|
+                [](auto && tz) {
+                    print_type(tz);
+                    PP(tz);
+                }
         ;
 
     }
