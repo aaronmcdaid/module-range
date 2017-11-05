@@ -882,7 +882,6 @@ namespace orange {
     }
 
 
-
     /*
      * Above, all the basic underlying technology for a range has
      * been defined. Now, the 'user-facing' code must be implemented,
@@ -1306,7 +1305,8 @@ namespace orange {
         {   return r.front_ref(); }
     };
     namespace testing_namespace{
-        static_assert(10 == (as_crange( std::array<double, 4> {{ 1.5,2.5,2,4 }} ) | accumulate) ,"");
+        static_assert(10.1 == (as_crange( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
+        static_assert(10.1 == (as_range ( std::array<double, 5> {{ 1.5,0.1,2.5,2,4 }} ) | accumulate) ,"");
         static_assert(60 == (orange:: testing_namespace:: orange_over_an_array<int, 3>({{10,20,30},0}) | accumulate) ,"");
 
         constexpr
