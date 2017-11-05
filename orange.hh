@@ -1340,7 +1340,7 @@ namespace orange {
 
 
         template<typename Z>
-        struct local_empty_checker { // This is to replace a capturing lambda. The only reason is that this is constexpr
+        struct zip_helper { // This is to replace a capturing lambda. The only reason is that this is constexpr
             Z & m_z;
 
             template<size_t ... Indices> auto constexpr
@@ -1369,19 +1369,19 @@ namespace orange {
         template<typename Z> static constexpr auto
         orange_empty        (Z &  z)    ->decltype(auto)
         {
-            return local_empty_checker<Z>{z}.zip_empty(std::make_index_sequence<N>());
+            return zip_helper<Z>{z}.zip_empty(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
         orange_advance      (Z &  z)    ->void
         {
-            return local_empty_checker<Z>{z}.zip_advance(std::make_index_sequence<N>());
+            return zip_helper<Z>{z}.zip_advance(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
         {
-            return local_empty_checker<Z>{z}.zip_front_val(std::make_index_sequence<N>());
+            return zip_helper<Z>{z}.zip_front_val(std::make_index_sequence<N>());
         }
     };
 
