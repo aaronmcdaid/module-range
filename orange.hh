@@ -962,21 +962,11 @@ namespace orange {
         orange_front_val  (M &m)
         {
             constexpr size_t N = std::tuple_size<decltype(m.m_r.m_ranges)>::value;
-            (void)N;
-            //return m.m_f(orange::front_val  ( m.m_r ));
-            //*
-            orange_utils:: apply_indices
+            return orange_utils:: apply_indices
             (   [&m](auto  ... Is) -> decltype(auto)
-                {
-                    return
-                    m.m_f(
-                        orange::front     ( std::template get<Is>(m.m_r.m_ranges)) ...
-                    )
-                    ;
-                }
+                { return m.m_f( orange::front ( std::template get<Is>(m.m_r.m_ranges)) ...) ; }
             ,   std::make_index_sequence<N>()
             );
-            //*/
         }
     };
 
