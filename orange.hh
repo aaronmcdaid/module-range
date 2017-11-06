@@ -988,6 +988,10 @@ namespace orange {
         orange_advance    (M &m) { orange::advance( m.m_r ) ;}
         template<typename M> static constexpr auto
         orange_front_val  (M &m) { return m.m_f(orange::front_val  ( m.m_r )) ;}
+        template<typename M> static constexpr auto
+        orange_front_ref  (M &m)
+        ->decltype(m.m_f(orange::front_ref  ( m.m_r )) )
+        {   return m.m_f(orange::front_ref  ( m.m_r )) ;}
     };
 
     template<typename R, typename Func>
