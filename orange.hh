@@ -1512,7 +1512,7 @@ namespace orange {
     template< typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
-    auto
+    auto constexpr
     zip_ref(Rs && ... rs) {
         static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
         return  zip_t<enum_zip_policy_on_references:: always_references, std::decay_t<Rs>...>
@@ -1523,7 +1523,7 @@ namespace orange {
     template< typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
-    auto
+    auto constexpr
     zip(Rs && ... rs) {
         return  zip_t<enum_zip_policy_on_references:: mixture, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
@@ -1540,7 +1540,7 @@ namespace orange {
     }
     template<typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
-            > auto
+            > auto constexpr
     zip_ref(Rs && ... rs)
     -> decltype(auto)
     {
@@ -1548,7 +1548,7 @@ namespace orange {
     }
     template<typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
-            > auto
+            > auto constexpr
     zip(Rs && ... rs)
     -> decltype(auto)
     {
