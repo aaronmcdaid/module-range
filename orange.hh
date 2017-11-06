@@ -1417,16 +1417,12 @@ namespace orange {
 
         template< typename Z
                 , typename ...
-                , typename other_zip_helper_t = typename zip_t
-                                                    < my_policy // enum_zip_policy_on_references:: always_references
-                                                    , Rs...
-                                                    > :: template zip_helper<Z>
                 , SFINAE_ENABLE_IF_CHECK( my_policy !=  enum_zip_policy_on_references:: values_only )
             > static constexpr auto
         orange_front_ref    (Z &  z)
-        ->decltype(other_zip_helper_t{z}.zip_front_ref(std::make_index_sequence<N>()))
+        ->decltype(zip_helper<Z>{z}.zip_front_ref(std::make_index_sequence<N>()))
         {
-            return other_zip_helper_t{z}.zip_front_ref(std::make_index_sequence<N>());
+            return zip_helper<Z>{z}.zip_front_ref(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
