@@ -598,6 +598,11 @@ namespace orange {
         {   return R:: orange_front_val(r); }
 
         template<typename R> static constexpr auto
+        front      (R &  r)
+        ->decltype(R:: orange_front    (r))
+        {   return R:: orange_front    (r); }
+
+        template<typename R> static constexpr auto
         pull       (R &  r)
         ->decltype(R:: orange_pull     (r))
         {   return R:: orange_pull     (r); }
