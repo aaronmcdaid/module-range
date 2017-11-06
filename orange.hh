@@ -261,6 +261,12 @@ namespace orange_utils {
                     (std::integral_constant<size_t,I>{}...);
     }
 
+    template<typename ... Ts>
+    constexpr
+    std::tuple<Ts...> // values and l-refs, but not r-ref
+    mk_tuple(Ts && ... ts) {
+        return std::tuple<Ts...>{ std::forward<Ts>(ts)... };
+    }
 
 }
 
