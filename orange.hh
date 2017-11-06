@@ -358,7 +358,12 @@ namespace orange {
     ->decltype(auto)
     { return lookup_traits<R>::front_val(r); }
 
-    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && has_trait_front_ref<R&> )>
+    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && has_trait_front<R> )>
+    auto constexpr
+    front_val  (R &r)
+    {   return lookup_traits<R>::front(r); }
+
+    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && !has_trait_front<R> && has_trait_front_ref<R&> )>
     auto constexpr
     front_val  (R &r)
     {   return lookup_traits<R>::front_ref(r); }
