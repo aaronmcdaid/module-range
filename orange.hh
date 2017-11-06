@@ -1321,9 +1321,9 @@ namespace orange {
                 , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: always_references )
                 > static constexpr auto
         get_one_item_to_return(Z & z)
-        -> decltype(auto)
+        ->decltype(std::ref(orange::front_ref(std::template get<Index>(z.m_ranges))))
         {
-            static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
+            //static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
             return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges)));
         }
         template< size_t Index
@@ -1384,11 +1384,9 @@ namespace orange {
             }
 
             template<size_t ... Indices> auto constexpr
-            zip_front_val(std::index_sequence<Indices...>)
-            -> decltype(auto)
-            {
-                return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...);
-            }
+            zip_front(std::index_sequence<Indices...>)
+            ->decltype(std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...))
+            {   return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
         };
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
