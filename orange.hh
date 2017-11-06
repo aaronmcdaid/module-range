@@ -1675,13 +1675,14 @@ namespace orange {
 
             constexpr sum_all_args_t(){}
         };
-        struct get_0_t {
+        template<size_t I>
+        struct get_I_t {
             template<typename ...T>
             constexpr auto
-            operator() (std::tuple<T...> t) const
-            { return std::get<0>(t);}
+            operator() (std::tuple<T...> const &t) const
+            { return std::get<I>(t);}
 
-            constexpr get_0_t(){}
+            constexpr get_I_t(){}
         };
         struct less_than_this {
             int threshold;
@@ -1717,14 +1718,15 @@ namespace orange {
 
         constexpr
         int test_zip () {
-            int ai[] = {2,-3,5,-8,8};
-            return
-            zip_ref(ai,ai)
-                |filter| compose(less_than_this{0}, get_0_t{})
-                |unzip_map| sum_all_args_t{}
-                |accumulate;
-        ;
+            int a1[] = {2,-3,5,-8,8};
+            int a2[] = {1,10,100,1000,10000};
+            auto shouldbe1010 =
+                    zip_ref(a1,a2)
+                        |filter|    compose(less_than_this{0}, get_I_t<0>{})
+                        |mapr|      get_I_t<1>{}
+                        |accumulate;
+            return shouldbe1010;
         }
-        static_assert(-22 == test_zip() ,"");
+        static_assert(1010 == test_zip() ,"");
     }
 } // namespace orange
