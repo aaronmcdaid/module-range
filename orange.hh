@@ -1659,8 +1659,72 @@ namespace orange {
                 static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<std::tuple<std::tuple<char , int > > >  >{},"");
                 static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<std::tuple<std::tuple<char&, int > > >  >{},"");
             }
-
         }
         static_assert(15 == orange:: testing_namespace:: zip_test() ,"");
+
+        struct sum_all_args_t {
+            template<typename T>
+            constexpr auto
+            operator() (T a) const
+            { return a;}
+
+            template<typename T, typename ... Us>
+            constexpr auto
+            operator() (T a, T b, Us ... us) const
+            { return (*this)(a+b, us...); }
+
+            constexpr sum_all_args_t(){}
+        };
+        struct get_0_t {
+            template<typename ...T>
+            constexpr auto
+            operator() (std::tuple<T...> t) const
+            { return std::get<0>(t);}
+
+            constexpr get_0_t(){}
+        };
+        struct less_than_this {
+            int threshold;
+
+            template<typename T>
+            constexpr auto
+            operator() (T x) const
+            { return x<threshold; }
+
+            constexpr less_than_this(int t):threshold(t) {}
+        };
+
+        template<typename L, typename R>
+        struct compose_t
+        {   L m_l;
+            R m_r;
+
+            template<typename ...T>
+            auto constexpr
+            operator() (T && ... t)
+            { return m_l(m_r(std::forward<T>(t)...)); }
+        };
+        template<typename L, typename R>
+        auto constexpr
+        compose(L && l, R && r)
+        {
+            return compose_t    < std::remove_reference_t<L>
+                                , std::remove_reference_t<R>
+                                >   { std::forward<L>(l)
+                                    , std::forward<R>(r)
+                                    };
+        }
+
+        constexpr
+        int test_zip () {
+            int ai[] = {2,-3,5,-8,8};
+            return
+            zip_ref(ai,ai)
+                |filter| compose(less_than_this{0}, get_0_t{})
+                |unzip_map| sum_all_args_t{}
+                |accumulate;
+        ;
+        }
+        static_assert(-22 == test_zip() ,"");
     }
 } // namespace orange
