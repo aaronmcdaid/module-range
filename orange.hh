@@ -1359,6 +1359,67 @@ namespace orange {
                 {   values_only
                 ,   always_references
                 ,   mixture };
+
+    template< size_t Index
+            , enum_zip_policy_on_references policy
+            , typename Z
+            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: values_only )
+            > static constexpr auto
+    get_one_item_to_return(Z & z)
+    -> decltype(auto)
+    { return orange::front_val(std::template get<Index>(z.m_ranges)); }
+
+    template< size_t Index
+            , enum_zip_policy_on_references policy
+            , typename Z
+            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: always_references )
+            > static constexpr auto
+    get_one_item_to_return(Z & z)
+    ->decltype(orange::front_ref(std::template get<Index>(z.m_ranges)))
+    { return orange::front_ref(std::template get<Index>(z.m_ranges)); }
+
+    template< size_t Index
+            , enum_zip_policy_on_references policy
+            , typename Z
+            , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
+            , SFINAE_ENABLE_IF_CHECK (   policy == enum_zip_policy_on_references:: mixture
+                    )
+            > static constexpr auto
+    get_one_item_to_return(Z & z)
+    -> decltype(auto)
+    { return orange::front(std::template get<Index>(z.m_ranges)) ; }
+
+    template< typename Z
+            , enum_zip_policy_on_references my_policy
+            >
+    struct zip_helper { // This is to replace a capturing lambda. The only reason is that this is constexpr
+        Z & m_z;
+
+        template<size_t ... Indices> auto constexpr
+        zip_empty(std::index_sequence<Indices...>)
+        -> bool
+        {
+            return   !all_true(!orange::empty ( std::template get<Indices>(m_z.m_ranges)) ... );
+        }
+
+        template<size_t ... Indices> auto constexpr
+        zip_advance(std::index_sequence<Indices...>)
+        -> void
+        {
+            orange_utils:: ignore(( orange::advance ( std::template get<Indices>(m_z.m_ranges)) ,0)...);
+        }
+
+        template<size_t ... Indices> auto constexpr
+        zip_front(std::index_sequence<Indices...>)
+        ->decltype(orange_utils::mk_tuple(orange:: get_one_item_to_return<Indices, my_policy>(m_z)...))
+        {   return orange_utils::mk_tuple(orange:: get_one_item_to_return<Indices, my_policy>(m_z)...); }
+
+        template<size_t ... Indices> auto constexpr
+        zip_front_ref(std::index_sequence<Indices...>)
+        ->decltype(orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
+        {   return orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
+    };
+
     template< enum_zip_policy_on_references my_policy
             , typename ... Rs >
     struct zip_t {
@@ -1384,88 +1445,17 @@ namespace orange {
         constexpr
         zip_t(zip_t      &&) = default;
 
-        template< size_t Index
-                , typename Z
-                , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: values_only )
-                > static constexpr auto
-        get_one_item_to_return(Z & z)
-        -> decltype(auto)
-        {
-            static_assert( all_true( has_trait_front_ref<Rs> || has_trait_front_val<Rs>     ... ),"Can't use 'zip_val' as every zipped range need at least 'front_val' or 'front_ref'");
-            return orange::front_val(std::template get<Index>(z.m_ranges));
-        }
-        template< size_t Index
-                , typename Z
-                , enum_zip_policy_on_references my_policy_deduced = my_policy
-                , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: always_references )
-                > static constexpr auto
-        get_one_item_to_return(Z & z)
-        ->decltype(orange::front_ref(std::template get<Index>(z.m_ranges)))
-        {
-            //static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
-            return orange::front_ref(std::template get<Index>(z.m_ranges));
-        }
-        template< size_t Index
-                , typename Z
-                , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
-                , SFINAE_ENABLE_IF_CHECK (   my_policy == enum_zip_policy_on_references:: mixture
-                         &&!std::is_reference<decltype(orange::front(std::template get<Index>(std::declval<Z&>().m_ranges)))>{}
-                        )
-                > static constexpr auto
-        get_one_item_to_return(Z & z)
-        -> decltype(auto)
-        { return          orange::front(std::template get<Index>(z.m_ranges)) ; }
-        template< size_t Index
-                , typename Z
-                , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
-                , SFINAE_ENABLE_IF_CHECK (   my_policy == enum_zip_policy_on_references:: mixture
-                         && std::is_reference<decltype(orange::front(std::template get<Index>(std::declval<Z&>().m_ranges)))>{}
-                        )
-                > static constexpr auto
-        get_one_item_to_return(Z & z)
-        -> decltype(auto)
-        { return orange::front(std::template get<Index>(z.m_ranges)); }
-
-        template<typename Z>
-        struct zip_helper { // This is to replace a capturing lambda. The only reason is that this is constexpr
-            Z & m_z;
-
-            template<size_t ... Indices> auto constexpr
-            zip_empty(std::index_sequence<Indices...>)
-            -> bool
-            {
-                return   !all_true(!orange::empty ( std::template get<Indices>(m_z.m_ranges)) ... );
-            }
-
-            template<size_t ... Indices> auto constexpr
-            zip_advance(std::index_sequence<Indices...>)
-            -> void
-            {
-                orange_utils:: ignore(( orange::advance ( std::template get<Indices>(m_z.m_ranges)) ,0)...);
-            }
-
-            template<size_t ... Indices> auto constexpr
-            zip_front(std::index_sequence<Indices...>)
-            ->decltype(orange_utils::mk_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...))
-            {   return orange_utils::mk_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
-
-            template<size_t ... Indices> auto constexpr
-            zip_front_ref(std::index_sequence<Indices...>)
-            ->decltype(orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
-            {   return orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
-        };
-
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
         template<typename Z> static constexpr auto
         orange_empty        (Z &  z)    ->decltype(auto)
         {
-            return zip_helper<Z>{z}.zip_empty(std::make_index_sequence<N>());
+            return orange:: zip_helper<Z,my_policy>{z}.zip_empty(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
         orange_advance      (Z &  z)    ->void
         {
-            return zip_helper<Z>{z}.zip_advance(std::make_index_sequence<N>());
+            return orange:: zip_helper<Z,my_policy>{z}.zip_advance(std::make_index_sequence<N>());
         }
 
         template< typename Z
@@ -1473,25 +1463,23 @@ namespace orange {
                 , SFINAE_ENABLE_IF_CHECK( my_policy !=  enum_zip_policy_on_references:: values_only )
             > static constexpr auto
         orange_front_ref    (Z &  z)
-        ->decltype(zip_helper<Z>{z}.zip_front_ref(std::make_index_sequence<N>()))
+        ->decltype(orange:: zip_helper<Z,my_policy>{z}.zip_front_ref(std::make_index_sequence<N>()))
         {
-            return zip_helper<Z>{z}.zip_front_ref(std::make_index_sequence<N>());
+            return orange:: zip_helper<Z,my_policy>{z}.zip_front_ref(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
         {
-            using other_zip_helper_t = typename zip_t
-                                                    < enum_zip_policy_on_references:: values_only
-                                                    , Rs...
-                                                    > :: template zip_helper<Z>;
-            return other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>());
+            return orange:: zip_helper< Z
+                                      , enum_zip_policy_on_references:: values_only
+                                      > {z}.zip_front(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
         orange_front        (Z &  z)    ->decltype(auto)
         {
-            return zip_helper<Z>{z}.zip_front(std::make_index_sequence<N>());
+            return orange:: zip_helper<Z,my_policy>{z}.zip_front(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr decltype(auto)
