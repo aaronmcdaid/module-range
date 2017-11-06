@@ -1310,12 +1310,25 @@ namespace orange {
         { return orange_utils::mk_tuple( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... ); }
 
         template<size_t ... Indices>
-        decltype(auto)
+        auto constexpr
         dereference_helper_val     (std::index_sequence<Indices...>)   const
-        { return std::make_tuple       ( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... ); }
+        ->decltype(std::make_tuple       ( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... ))
+        {   return std::make_tuple       ( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... ); }
 
-        using ref_type = decltype(std::declval<orange_zip_iterator>().dereference_helper(std::make_index_sequence<Z::width>{}));
-        using val_type = decltype(std::declval<orange_zip_iterator>().dereference_helper_val(std::make_index_sequence<Z::width>{}));
+        template<size_t ... Indices>
+        static auto
+        undefined_helper_val(std::index_sequence<Indices...>)
+        ->decltype( std::make_tuple       ( *(orange::begin(std::get<Indices>( std::declval<Z&>() .m_ranges)) ) ...))
+        ;
+
+        template<size_t ... Indices>
+        static auto
+        undefined_helper_ref(std::index_sequence<Indices...>)
+        ->decltype( orange_utils::mk_tuple( *(orange::begin(std::get<Indices>( std::declval<Z&>() .m_ranges)) /*+m_offset*/ ) ...))
+        ;
+
+        using val_type = decltype( undefined_helper_val(std::make_index_sequence<Z::width>()));
+        using ref_type = decltype( undefined_helper_ref(std::make_index_sequence<Z::width>()));
     };
 } // leave namespace orange for a moment to define std:: iterator_traits
 

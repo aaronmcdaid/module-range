@@ -184,7 +184,7 @@ int main () {
         print_type(za);
         print_type(orange::front_val(za));
     }
-    if(0){
+    if(1){
         // sorting in place
         int ai[] = {4,7,2,9,3,7};
         char ac[] = {'h','e','l','l','o'};
@@ -201,7 +201,23 @@ int main () {
             PP(*b);
             ++b;
         }
+        PP(*(begin(ar)+0));
+        PP(*(begin(ar)+1));
+        PP(*(begin(ar)+2));
+        print_type(*(begin(ar)+2));
 
-        //std:: sort(begin(ar), end(ar));
+        std:: cout << '\n';
+        for(auto i = begin(ar); i!=end(ar); ++i) {
+            print_type(*i);
+            PP(*i);
+        }
+
+        std:: sort(begin(ar), end(ar));
+
+        std:: cout << '\n';
+        for(auto i = begin(ar); i!=end(ar); ++i) {
+            print_type(*i);
+            PP(*i);
+        }
     }
 }
