@@ -179,6 +179,10 @@ int main () {
         print_type(orange::front(zr));
         print_type(orange::front_val(zr));
         //print_type(orange::front_ref(zr));
+
+        auto za = zip_ref(ai, ai);
+        print_type(za);
+        print_type(orange::front_val(za));
     }
     if(0){
         // sorting in place

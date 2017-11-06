@@ -1327,10 +1327,10 @@ namespace orange {
                 , SFINAE_ENABLE_IF_CHECK( my_policy == enum_zip_policy_on_references:: always_references )
                 > static constexpr auto
         get_one_item_to_return(Z & z)
-        ->decltype(std::ref(orange::front_ref(std::template get<Index>(z.m_ranges))))
+        ->decltype(orange::front_ref(std::template get<Index>(z.m_ranges)))
         {
             //static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
-            return std::ref(orange::front_ref(std::template get<Index>(z.m_ranges)));
+            return orange::front_ref(std::template get<Index>(z.m_ranges));
         }
         template< size_t Index
                 , typename Z
@@ -1351,7 +1351,7 @@ namespace orange {
                 > static constexpr auto
         get_one_item_to_return(Z & z)
         -> decltype(auto)
-        { return std::ref(orange::front(std::template get<Index>(z.m_ranges))); }
+        { return orange::front(std::template get<Index>(z.m_ranges)); }
 
         template<typename Z>
         struct orange_zip_iterator {
@@ -1393,13 +1393,13 @@ namespace orange {
 
             template<size_t ... Indices> auto constexpr
             zip_front(std::index_sequence<Indices...>)
-            ->decltype(std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...))
-            {   return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
+            ->decltype(orange_utils::mk_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...))
+            {   return orange_utils::mk_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
 
             template<size_t ... Indices> auto constexpr
             zip_front_ref(std::index_sequence<Indices...>)
-            ->decltype(std::forward_as_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
-            {   return std::forward_as_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
+            ->decltype(orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
+            {   return orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
         };
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
