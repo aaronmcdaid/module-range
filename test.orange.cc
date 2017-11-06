@@ -160,6 +160,27 @@ int main () {
 
     }
     {
+        int ai[] = {4};
+        zip_val(ai, ints())
+            |foreach| [](auto &&x)
+                { print_type(x);};
+        zip(ai, ints())
+            |foreach| [](auto &&x)
+                { print_type(x);};
+        auto z = zip(ai, ints());
+
+        std::cout<<'\n';
+        print_type(orange::front(z));
+        print_type(orange::front_val(z));
+        //print_type(orange::front_ref(z)); // good that it won't work
+
+        std::cout<<'\n';
+        auto zr = zip(ai, ai);
+        print_type(orange::front(zr));
+        print_type(orange::front_val(zr));
+        print_type(orange::front_ref(zr));
+    }
+    if(0){
         // sorting in place
         int ai[] = {4,7,2,9,3,7};
         char ac[] = {'h','e','l','l','o'};
