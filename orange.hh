@@ -1361,7 +1361,7 @@ namespace orange {
             decltype(auto)
             dereference_helper         (std::index_sequence<Indices...>)   const
             {
-                return std::make_tuple( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... );
+                return std::forward_as_tuple( *(orange::begin(std::get<Indices>(m_z_reference.m_ranges)) + m_offset) ... );
             }
         };
 
