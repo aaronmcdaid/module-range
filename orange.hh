@@ -1736,6 +1736,7 @@ namespace orange {
             template<typename ...T>
             constexpr auto
             operator() (std::tuple<T...> const &t) const
+            ->decltype(std::get<I>(t))
             { return std::get<I>(t);}
 
             constexpr get_I_t(){}
@@ -1784,5 +1785,19 @@ namespace orange {
             return shouldbe1010;
         }
         static_assert(1010 == test_zip() ,"");
+
+        constexpr int
+        zip_in_place_edits() {
+            int a1[] = {2,-3,5,-8,8};
+            int a2[] = {10,-20,30,-40,50};
+
+            zip(a1,a2,ints())
+                |filter|    compose(less_than_this{0}, get_I_t<0>{})
+                |mapr|      get_I_t<1>{}
+                |foreach|   negate_me_in_place
+                ;
+            return a2 | accumulate;
+        }
+        static_assert(150 ==zip_in_place_edits() ,"");
     }
 } // namespace orange
