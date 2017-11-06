@@ -1303,7 +1303,11 @@ namespace orange {
         using type_of_tuple = std:: tuple<std::decay_t<Rs>...>;
         type_of_tuple m_ranges;
 
-        template< typename ... Ts >
+        template< typename ... Ts
+            , std::enable_if_t<
+            all_true(std::is_same<std::decay_t<Ts>, std::decay_t<Rs> >{} ...)
+                    >* =nullptr
+            >
         constexpr
         zip_t(Ts && ... ts) : m_ranges(std::forward<Ts>(ts)...) {}
 
