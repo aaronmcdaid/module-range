@@ -1063,6 +1063,21 @@ namespace orange {
             constexpr size_t N = std::tuple_size< decltype(orange:: front_ref(m.m_r)) >{};
             return orange_front_ref_helper(m, std::make_index_sequence<N>());
         }
+
+        template< typename M> static constexpr auto
+        orange_front      (M &m)
+        ->decltype(
+                    orange_front_helper     ( std::declval<M&>()
+                                        , std::make_index_sequence
+                                            <
+                                                std::tuple_size< decltype(orange:: front    (std::declval<M&>().m_r)) >{}
+                                            >{}
+                                        )
+                )
+        {
+            constexpr size_t N = std::tuple_size< decltype(orange:: front    (m.m_r)) >{};
+            return orange_front_helper    (m, std::make_index_sequence<N>());
+        }
     };
 
     template<typename R, typename Func>
