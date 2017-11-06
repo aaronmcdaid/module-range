@@ -1389,9 +1389,9 @@ namespace orange {
             {   return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
 
             template<size_t ... Indices> auto constexpr
-            zip_front_ref(std::index_sequence<Indices...>) // TODO: this won't like recursive zips. 'forward_as_tuple' ?
-            ->decltype(std::make_tuple(std::ref(orange::front_ref(std::template get<Indices>(m_z.m_ranges)))...))
-            {   return std::make_tuple(std::ref(orange::front_ref(std::template get<Indices>(m_z.m_ranges)))...); }
+            zip_front_ref(std::index_sequence<Indices...>)
+            ->decltype(std::forward_as_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
+            {   return std::forward_as_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
         };
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
