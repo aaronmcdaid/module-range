@@ -1015,15 +1015,20 @@ namespace orange {
         orange_empty      (M &m) { return orange:: empty(m.m_r);}
         template<typename M> static constexpr void
         orange_advance    (M &m) { orange::advance( m.m_r ) ;}
+        template<typename M, size_t ... Is> static constexpr auto
+        orange_front_val_helper  (M &m, std::index_sequence<Is...>)
+        {
+            auto tup = orange::front (m.m_r);
+            return m.m_f( std::template get<Is>(
+                        std::move(tup) // move to force get to respect the ref-ness of the elements of the tuple
+                        ) ...);
+        }
+
         template<typename M> static constexpr auto
         orange_front_val  (M &m)
         {
-            constexpr size_t N = std::tuple_size<decltype(m.m_r.m_ranges)>::value;
-            return orange_utils:: apply_indices
-            (   [&m](auto  ... Is) -> decltype(auto)
-                { return m.m_f( orange::front ( std::template get<Is>(m.m_r.m_ranges)) ...) ; }
-            ,   std::make_index_sequence<N>()
-            );
+            constexpr size_t N = std::tuple_size< decltype(orange:: pull(m.m_r)) >();
+            return orange_front_val_helper(m, std::make_index_sequence<N>());
         }
     };
 
