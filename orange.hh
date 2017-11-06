@@ -1387,6 +1387,11 @@ namespace orange {
             zip_front(std::index_sequence<Indices...>)
             ->decltype(std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...))
             {   return std::make_tuple(zip_t:: get_one_item_to_return<Indices>(m_z)...); }
+
+            template<size_t ... Indices> auto constexpr
+            zip_front_ref(std::index_sequence<Indices...>) // TODO: this won't like recursive zips. 'forward_as_tuple' ?
+            ->decltype(std::make_tuple(std::ref(orange::front_ref(std::template get<Indices>(m_z.m_ranges)))...))
+            {   return std::make_tuple(std::ref(orange::front_ref(std::template get<Indices>(m_z.m_ranges)))...); }
         };
 
         using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
@@ -1405,14 +1410,15 @@ namespace orange {
         template< typename Z
                 , typename ...
                 , typename other_zip_helper_t = typename zip_t
-                                                    < enum_zip_policy_on_references:: always_references
+                                                    < my_policy // enum_zip_policy_on_references:: always_references
                                                     , Rs...
                                                     > :: template zip_helper<Z>
+                , SFINAE_ENABLE_IF_CHECK( my_policy !=  enum_zip_policy_on_references:: values_only )
             > static constexpr auto
         orange_front_ref    (Z &  z)
-        ->decltype(other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>()))
+        ->decltype(other_zip_helper_t{z}.zip_front_ref(std::make_index_sequence<N>()))
         {
-            return other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>());
+            return other_zip_helper_t{z}.zip_front_ref(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr auto
@@ -1521,6 +1527,53 @@ namespace orange {
             double  t = 0.0;
             zip_val( i, d ) |foreach| summer_t<double>{t};
             return t;
+        }
+
+        void zip_types() {
+            int ai[] = {4};
+            auto z = zip(ai, ints());
+            auto zi = zip(ints(), ints());
+            auto za = zip(ai, ai);
+
+            static_assert(std::is_same  < decltype(orange::front_val(z ))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front_val(zi))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
+
+            static_assert(std::is_same  < decltype(orange::front    (z ))   , std::tuple<int &, int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (zi))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
+
+            //static_assert(std::is_same  < decltype(orange::front_ref(z ))   , std::tuple<int &, int &> >{}, ""); // error, correctly
+            //static_assert(std::is_same  < decltype(orange::front_ref(zi))   , std::tuple<int &, int &> >{}, ""); // error, correctly
+            static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, "");
+        }
+        void zip_val_types() {
+            int ai[] = {4};
+            auto z = zip_val(ai, ints());
+            auto zi = zip_val(ints(), ints());
+            auto za = zip_val(ai, ai);
+
+            static_assert(std::is_same  < decltype(orange::front_val(z ))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front_val(zi))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
+
+            static_assert(std::is_same  < decltype(orange::front    (z ))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (zi))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int  , int  > >{}, "");
+
+            //static_assert(std::is_same  < decltype(orange::front_ref(z ))   , std::tuple<int &, int &> >{}, ""); // error, correctly
+            //static_assert(std::is_same  < decltype(orange::front_ref(zi))   , std::tuple<int &, int &> >{}, ""); // error, correctly
+            //static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, ""); // error, correctly
+        }
+        void zip_ref_types() {
+            int ai[] = {4};
+            //auto z = zip_ref(ai, ints()); // can't be made. This is correct
+            //auto zi = zip_ref(ints(), ints()); // can't be made. This is correct
+            auto za = zip_ref(ai, ai);
+
+            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
+            static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, "");
         }
         static_assert(15 == orange:: testing_namespace:: zip_test() ,"");
     }
