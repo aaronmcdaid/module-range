@@ -312,6 +312,7 @@ namespace orange {
     auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::advance  (r) )){};
     auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_val(r) )){};
     auto checker_for__has_trait_front_ref   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_ref(r) )){};
+    auto checker_for__has_trait_front       = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front    (r) )){};
     auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::pull     (r) )){};
 
     template<typename R> constexpr bool
@@ -322,6 +323,8 @@ namespace orange {
     has_trait_front_val = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_val), R>;
     template<typename R> constexpr bool
     has_trait_front_ref = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_ref), R>;
+    template<typename R> constexpr bool
+    has_trait_front     = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front    ), R>;
     template<typename R> constexpr bool
     has_trait_pull      = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_pull), R>;
 
