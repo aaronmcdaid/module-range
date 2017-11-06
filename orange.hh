@@ -952,26 +952,15 @@ namespace orange {
     // =========
     // Two overloads, depending on whether we have 'front_ref' or not
     template<typename R, typename Func
-            , SFINAE_ENABLE_IF_CHECK( has_trait_front_ref<R> )
+            //, SFINAE_ENABLE_IF_CHECK( has_trait_front<R> || has_trait_front_ref<R> || has_trait_front_val<R> )
             >
     constexpr auto
     operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
     -> void
     {
         while(!orange::empty(r.m_r)) {
-            func(orange::front_ref(r.m_r));
+            func(orange::front(r.m_r));
             orange::advance(r.m_r);
-        }
-    }
-    template<typename R, typename Func
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_front_ref<R> )
-            >
-    constexpr auto
-    operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
-    -> decltype( orange::pull(r.m_r), (void)0 ) // void, but SFINAE on 'pull' first
-    {
-        while(!orange::empty(r.m_r)) {
-            func(orange::pull(r.m_r));
         }
     }
 
