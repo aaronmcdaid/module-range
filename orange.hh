@@ -1402,10 +1402,33 @@ namespace orange {
             return zip_helper<Z>{z}.zip_advance(std::make_index_sequence<N>());
         }
 
+        template< typename Z
+                , typename ...
+                , typename other_zip_helper_t = typename zip_t
+                                                    < enum_zip_policy_on_references:: always_references
+                                                    , Rs...
+                                                    > :: template zip_helper<Z>
+            > static constexpr auto
+        orange_front_ref    (Z &  z)
+        ->decltype(other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>()))
+        {
+            return other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>());
+        }
+
         template<typename Z> static constexpr auto
         orange_front_val    (Z &  z)    ->decltype(auto)
         {
-            return zip_helper<Z>{z}.zip_front_val(std::make_index_sequence<N>());
+            using other_zip_helper_t = typename zip_t
+                                                    < enum_zip_policy_on_references:: values_only
+                                                    , Rs...
+                                                    > :: template zip_helper<Z>;
+            return other_zip_helper_t{z}.zip_front(std::make_index_sequence<N>());
+        }
+
+        template<typename Z> static constexpr auto
+        orange_front        (Z &  z)    ->decltype(auto)
+        {
+            return zip_helper<Z>{z}.zip_front(std::make_index_sequence<N>());
         }
 
         template<typename Z> static constexpr decltype(auto)
