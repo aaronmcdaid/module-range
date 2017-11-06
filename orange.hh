@@ -387,24 +387,27 @@ namespace orange {
 
     /* 'front'
      * =======
-     *      This one is a bit special. It's not based on any trait.
-     * It simply forwards to orange::front_ref if it's available,
-     * or orange:: front_val if it's not.
+     * Try the 'front' trait first, then 'front_ref', then 'front_val'.
      */
     auto checker_for__has_orange_front_ref  = [](auto&&r)->decltype(void(  orange::front_ref(r) )){};
     template<typename R>
     constexpr bool    has_orange_front_ref  = orange_utils:: is_invokable_v<decltype(checker_for__has_orange_front_ref), R >;
 
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK( has_orange_front_ref<R>)
-            >
+            , SFINAE_ENABLE_IF_CHECK( has_trait_front<R> )>
+    auto constexpr
+    front    (R       &r)
+    ->decltype(auto)
+    {   return lookup_traits<R>::front(r); }
+
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK(!has_trait_front<R> && has_orange_front_ref<R>) >
     auto constexpr
     front    (R       &r)
     ->decltype(orange::front_ref(r))
     {   return orange::front_ref(r);}
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK(!has_orange_front_ref<R>)
-            >
+            , SFINAE_ENABLE_IF_CHECK(!has_trait_front<R> &&!has_orange_front_ref<R>) >
     auto constexpr
     front    (R       &r)
     ->decltype(orange::front_val(r))
