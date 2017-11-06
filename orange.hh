@@ -1124,6 +1124,10 @@ namespace orange {
         orange_front_ref  (M &m)
         ->decltype(orange:: front_ref(m.m_r))
         {   return orange:: front_ref(m.m_r);}
+        template<typename M> static constexpr auto
+        orange_front      (M &m)
+        ->decltype(orange:: front    (m.m_r))
+        {   return orange:: front    (m.m_r);}
         template<typename M> static constexpr void
         orange_advance    (M &m) { orange:: advance(m.m_r); m.skip_if_necessary(); }
     };
