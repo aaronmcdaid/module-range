@@ -1584,6 +1584,22 @@ namespace orange {
             static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
             static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, "");
         }
+        void zip_recursive_types()
+        {
+            int ai[] = {4,7,2,9,3,7};
+            char   ac[] = {'A','b','c'};
+            double ad[] = {4,7,2,9,3,7};
+
+            auto zrec = zip(ai, zip(ac, ad));
+            static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<int , std::tuple<char , double > >    >{},"");
+            static_assert(std::is_same<decltype( orange::front_ref(zrec) ), std::tuple<int&, std::tuple<char&, double&> >    >{},"");
+            static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<int&, std::tuple<char&, double&> >    >{},"");
+
+            auto zrecv= zip(ai, zip(ac, ints(), ad));
+            static_assert(std::is_same<decltype( orange::front_val(zrecv) ), std::tuple<int , std::tuple<char , int, double > >    >{},"");
+            static_assert(std::is_same<decltype( orange::front    (zrecv) ), std::tuple<int&, std::tuple<char&, int, double&> >    >{},"");
+
+        }
         static_assert(15 == orange:: testing_namespace:: zip_test() ,"");
     }
 } // namespace orange
