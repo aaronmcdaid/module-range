@@ -992,6 +992,10 @@ namespace orange {
         orange_front_ref  (M &m)
         ->decltype(m.m_f(orange::front_ref  ( m.m_r )) )
         {   return m.m_f(orange::front_ref  ( m.m_r )) ;}
+        template<typename M> static constexpr auto
+        orange_front      (M &m)
+        ->decltype(m.m_f(orange::front      ( m.m_r )) )
+        {   return m.m_f(orange::front      ( m.m_r )) ;}
     };
 
     template<typename R, typename Func>
