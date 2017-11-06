@@ -711,9 +711,10 @@ namespace orange {
     template<typename T
             , SFINAE_ENABLE_IF_CHECK( is_range_v<T> )
             >
-    constexpr decltype(auto)
+    constexpr auto
     as_range(T &&t)
-    { return std::forward<T>(t); }
+    ->decltype(std::forward<T>(t))
+    {   return std::forward<T>(t); }
 
     // a container with begin and end. The typical use of 'as_range'
     template <typename T>
