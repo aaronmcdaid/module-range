@@ -1406,12 +1406,16 @@ namespace std {
         using difference_type = int;
         using iterator_category  = std::random_access_iterator_tag;
     };
+    template<size_t ... I, typename ...T>
     void
-    swap(std::tuple<int&, char&, double&> l, std::tuple<int&, char&, double&> r) {
-        // TODO: Should swap each element directly, instead of copying
-        std::tuple<int, char, double> copy = l;
-        l = r;
-        r = copy;
+    swap_helper(std::index_sequence<I...>, std::tuple<T...> l, std::tuple<T...> r) {
+        using std::swap;
+        orange_utils:: ignore( (void(swap( std::get<I>(l) , std:: get<I>(r) )),0) ... );
+    }
+    template<typename ...T>
+    void
+    swap(std::tuple<T...> l, std::tuple<T...> r) {
+        swap_helper(std::make_index_sequence< std::tuple_size<decltype(r)>{} >{}, l,r);
     }
 }
 namespace orange {
