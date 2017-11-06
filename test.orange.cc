@@ -178,7 +178,7 @@ int main () {
         auto zr = zip(ai, ai);
         print_type(orange::front(zr));
         print_type(orange::front_val(zr));
-        print_type(orange::front_ref(zr));
+        //print_type(orange::front_ref(zr));
     }
     if(0){
         // sorting in place
