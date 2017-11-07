@@ -1561,8 +1561,8 @@ namespace orange {
             int a1[] = {2,-3,5,-8,8};
             int a2[] = {1,10,100,1000,10000};
             auto shouldbe1010 =
-                    zip_as_is(a1,a2) // was as_is
-                        |filter|    compose(less_than_this{0}, get_I_t<0>{}) // this filter was applied
+                    zip(a1,a2)
+                        |filter|    compose(less_than_this{0}, get_I_t<0>{})
                         |mapr|      get_I_t<1>{}
                         |accumulate;
             return shouldbe1010;
