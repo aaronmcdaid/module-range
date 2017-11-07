@@ -799,12 +799,13 @@ namespace orange {
         constexpr tagger_t() {} // clang-3.8.0 insists on a user-provided default constructor
     };
 
-    struct foreach_tag_t        {};     constexpr   tagger_t<foreach_tag_t      >   foreach;
     struct filter_tag_t         {};     constexpr   tagger_t<filter_tag_t       >   filter;
-    struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
-    struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
+
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
+
+    struct foreach_tag_t        {};     constexpr   tagger_t<foreach_tag_t      >   foreach;
+
     struct collect_tag_t{constexpr collect_tag_t(){}};
                                         constexpr            collect_tag_t          collect;    // no need for 'tagger_t', this directly runs
     struct discard_collect_tag_t{constexpr discard_collect_tag_t(){}};
@@ -957,26 +958,6 @@ namespace orange {
                               };
     }
 
-
-    // |collect|
-    template<typename R, typename Func>
-    auto constexpr
-    operator| (forward_this_with_a_tag<R,map_collect_tag_t> f, Func func) {
-
-        static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
-
-        using value_type = decltype (   func   (  orange::front( f.m_r )  ));
-        static_assert(!std::is_reference<value_type>{} ,"");
-        std:: vector<value_type> res;
-
-        while(!orange::empty(f.m_r)) {
-            res.push_back( func(orange::pull(f.m_r)));
-        }
-
-        return res;
-    }
-
-
     // |collect|
     template<typename R
             , typename Rnonref = std::remove_reference_t<R>
@@ -1045,25 +1026,6 @@ namespace orange {
         }
 
         return total;
-    }
-
-    // |take_collect
-    template<typename R>
-    auto constexpr
-    operator| (forward_this_with_a_tag<R,take_collect_tag_t> f, int how_many) {
-
-        static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
-
-        using value_type = decltype (   orange::front( f.m_r )  );
-        std:: vector<value_type> res;
-
-        while(!orange::empty(f.m_r) && how_many>0) {
-            res.push_back( orange::front(f.m_r));
-            orange::advance(f.m_r);
-            --how_many;
-        }
-
-        return res;
     }
 
     namespace testing_namespace {
