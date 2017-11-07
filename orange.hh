@@ -1513,13 +1513,14 @@ namespace orange {
 
             constexpr sum_all_args_t(){}
         };
+
         template<size_t I>
         struct get_I_t {
             template<typename T>
             constexpr auto
             operator() (T && t) const
-            ->decltype(std::get<I>(std::forward<T>(t)))
-            {   return std::get<I>(std::forward<T>(t));}
+            -> decltype( orange_utils::non_rref (   std::get<I>(std::forward<T>(t)) ))
+            { return                                std::get<I>(std::forward<T>(t)); }
 
             constexpr get_I_t(){}
         };
