@@ -1135,7 +1135,7 @@ namespace orange {
     struct memoize_helper
     {
         static_assert(!std::is_reference<R>{} ,"");
-        using val_type = decltype(orange::front(std::declval<R&>()));
+        using val_type = std::remove_reference_t<decltype(orange::front(std::declval<R&>()))>;
         static_assert(!std::is_reference<val_type>{} ,"");
 
         R m_r;
@@ -1145,8 +1145,7 @@ namespace orange {
         memoize_helper(R && r)
         : m_r(std::move(r))
         {
-            if(!orange::empty(m_r))
-            {
+            if(!orange::empty(m_r)) {
                 m_current = std::make_unique<val_type>(orange::front(m_r));
                 orange::advance(m_r);
             }
@@ -1165,15 +1164,10 @@ namespace orange {
         template<typename M> static constexpr void
         orange_advance    (M &m)
         {
-            //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
             m.m_current.reset();
-            //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
             if(!orange::empty(m.m_r)) {
                 m.m_current = std::make_unique<val_type>(orange::front(m.m_r));
-                //std::cout << __LINE__ << "\t:" << orange::front(m.m_r) << '\n';
-                //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
                 orange::advance(m.m_r);
-                //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
             }
         }
 
