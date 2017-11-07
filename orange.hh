@@ -1583,4 +1583,46 @@ namespace orange {
         }
         static_assert(150 ==zip_in_place_edits() ,"");
     }
+
+    struct apply_pack_tag_t{constexpr apply_pack_tag_t(){}}; constexpr apply_pack_tag_t apply_pack;
+
+    template<typename F>
+    struct apply_pack_helper {
+        static_assert(!std::is_rvalue_reference<F>{} ,"");
+
+        F m_f;
+
+        template< typename Tup
+                , size_t ... I
+                > auto constexpr
+        call(std::index_sequence<I...>, Tup && tup) const
+        ->decltype(m_f( std::template get<I>( tup ) ...))
+        {   return m_f( std::template get<I>( tup ) ...); }
+
+        template<typename Tup>
+        auto constexpr
+        operator() (Tup && tup) const
+        ->decltype(call ( std::make_index_sequence< std::tuple_size<Tup>::value >() , std::forward<Tup>(tup)))
+        {   return call ( std::make_index_sequence< std::tuple_size<Tup>::value >() , std::forward<Tup>(tup)); }
+    };
+
+    template<typename F>
+    auto constexpr
+    operator* (apply_pack_tag_t, F && f)
+    -> apply_pack_helper<F>
+    { return {std::forward<F>(f)}; }
+
+    namespace testing_namespace {
+        constexpr
+        int apply_test() {
+            int a1[] = {300,200,100};
+            int a2[] = {3,2,1};
+
+            return
+            zip(a1,a2,ints())
+                |mapr| apply_pack*(sum_all_args_t{})
+                |accumulate;
+        }
+        static_assert(609 == apply_test(), "");
+    }
 } // namespace orange
