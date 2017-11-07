@@ -839,6 +839,8 @@ namespace orange {
                                         constexpr            discard_collect_tag_t  discard_collect;    // no need for 'tagger_t', this directly runs
     struct accumulate_tag_t{constexpr accumulate_tag_t(){}};
                                         constexpr            accumulate_tag_t       accumulate;    // no need for 'tagger_t', this directly runs
+    struct concat_tag_t{constexpr concat_tag_t(){}};
+                                        constexpr            concat_tag_t           concat;    // no need for 'tagger_t', this directly runs
 
 
     // the type to capture the value, i.e. for the left-hand '|'
@@ -1028,6 +1030,7 @@ namespace orange {
                                  && (   std::is_same<Tag, collect_tag_t>{}
                                      || std::is_same<Tag, discard_collect_tag_t>{}
                                      || std::is_same<Tag, accumulate_tag_t>{}
+                                     || std::is_same<Tag, concat_tag_t>{}
                                     ))
         >
     auto constexpr
@@ -1054,6 +1057,63 @@ namespace orange {
 
         return total;
     }
+
+    /*  |concat
+     *      Flatten a range-of-ranges into a range
+     */
+    template<typename R>
+    struct concat_helper
+    {
+        R m_r;
+
+        static_assert(!std::is_reference<R>{} ,"");
+
+        constexpr
+        concat_helper(R && r)
+        : m_r(std::move(r))
+        { this->skip_if_necessary(); }
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+
+        void constexpr
+        skip_if_necessary() {
+            while   (   !orange::empty(m_r)
+                    &&   orange::empty(orange::front(m_r)))
+                    { orange::advance(m_r); }
+        }
+
+        template<typename M> static constexpr bool
+        orange_empty      (M &m)
+        { return orange:: empty(m.m_r);}
+
+        template<typename M> static constexpr void
+        orange_advance    (M &m) {
+            orange::advance( orange::front(m.m_r) );
+            m.skip_if_necessary();
+        }
+
+        template<typename RR> static constexpr auto
+        orange_front      (RR &r)
+        ->decltype(orange::front(orange::front(r.m_r)))
+        {
+            return orange::front(orange::front(r.m_r));
+        }
+        /*
+        */
+    };
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<R> )
+            >
+    auto constexpr
+    operator| (R r, concat_tag_t)
+    -> concat_helper<R>
+    {
+        static_assert( is_range_v<R> ,"");
+        static_assert( is_range_v<decltype(orange::front(r))> ,"");
+
+        return {std::move(r)};
+    }
+
 
     namespace testing_namespace {
         static_assert( 10 ==  (ints(5) | accumulate)  ,"");

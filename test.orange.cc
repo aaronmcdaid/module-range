@@ -41,4 +41,11 @@ int main () {
     }
 
     PP(replicate(5, std::string("five")) | collect);
+    {
+        using ints_t = decltype(ints(42));
+        (ints_t[]) { ints(3), ints(100,105) }
+            |concat
+            |foreach| [](auto &&x ) { PP(x); }
+            ;
+    }
 }
