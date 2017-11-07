@@ -1504,11 +1504,11 @@ namespace orange {
         };
         template<size_t I>
         struct get_I_t {
-            template<typename ...T>
+            template<typename T>
             constexpr auto
-            operator() (std::tuple<T...> const &t) const
-            ->decltype(std::get<I>(t))
-            { return std::get<I>(t);}
+            operator() (T && t) const
+            ->decltype(std::get<I>(std::forward<T>(t)))
+            {   return std::get<I>(std::forward<T>(t));}
 
             constexpr get_I_t(){}
         };
