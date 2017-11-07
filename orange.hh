@@ -803,7 +803,6 @@ namespace orange {
     struct filter_tag_t         {};     constexpr   tagger_t<filter_tag_t       >   filter;
     struct map_collect_tag_t    {};     constexpr   tagger_t<map_collect_tag_t  >   map_collect;
     struct take_collect_tag_t   {};     constexpr   tagger_t<take_collect_tag_t >   take_collect;
-    struct unzip_map_tag_t      {};     constexpr   tagger_t<unzip_map_tag_t    >   unzip_map;
     struct map_tag_t            {};     constexpr   tagger_t<map_tag_t          >   map_range;
                                         constexpr   tagger_t<map_tag_t          >   mapr;
     struct collect_tag_t{constexpr collect_tag_t(){}};
@@ -910,56 +909,6 @@ namespace orange {
                               , std::forward<Func>(func)
                               };
     }
-
-
-    // |unzip_map|
-    template<typename R, typename F>
-    struct unzip_mapping_range {
-        static_assert(!std::is_reference<R>{},"");
-        static_assert(!std::is_reference<F>{},"");
-        static_assert( is_range_v<R>, "");
-        R m_r;
-        F m_f;
-
-        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
-        template<typename M> static constexpr bool
-        orange_empty      (M &m) { return orange:: empty(m.m_r);}
-        template<typename M> static constexpr void
-        orange_advance    (M &m) { orange::advance( m.m_r ) ;}
-
-        template<typename M, size_t ... Is> static constexpr auto
-        orange_front_helper  (M &m, std::index_sequence<Is...>)
-        ->decltype(auto)
-        {   auto tup = orange::front (m.m_r); // store it here, so that it's not called multiple times in the pack expansion on the next line
-            return m.m_f( std::template get<Is>( std::move(tup)) ...); // move to force get to respect the ref-ness of the elements of the tuple
-        }
-
-        template< typename M> static constexpr auto
-        orange_front      (M &m)
-        ->decltype(
-                    orange_front_helper     ( std::declval<M&>()
-                                        , std::make_index_sequence
-                                            <
-                                                std::tuple_size< decltype(orange:: front    (std::declval<M&>().m_r)) >{}
-                                            >{}
-                                        )
-                )
-        {
-            constexpr size_t N = std::tuple_size< decltype(orange:: front    (m.m_r)) >{};
-            return orange_front_helper    (m, std::make_index_sequence<N>());
-        }
-    };
-
-    template<typename R, typename Func>
-    auto constexpr
-    operator| (forward_this_with_a_tag<R,unzip_map_tag_t> f, Func && func) {
-        return unzip_mapping_range<   std::remove_reference_t<R>      // so we store it by value
-                            ,   std::remove_reference_t<Func>
-                            > { std::move         (f.m_r)
-                              , std::forward<Func>(func)
-                              };
-    }
-
 
     // |filter|
     template<typename R, typename F>
