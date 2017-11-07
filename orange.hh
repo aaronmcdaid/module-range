@@ -1544,20 +1544,18 @@ namespace orange {
                                     };
         }
 
-        /*
         constexpr
         int test_zip () {
             int a1[] = {2,-3,5,-8,8};
             int a2[] = {1,10,100,1000,10000};
             auto shouldbe1010 =
-                    zip(a1,a2)
-                        //|filter|    compose(less_than_this{0}, get_I_t<0>{})
+                    zip_as_is(a1,a2) // was as_is
+                        |filter|    compose(less_than_this{0}, get_I_t<0>{}) // this filter was applied
                         |mapr|      get_I_t<1>{}
                         |accumulate;
             return shouldbe1010;
         }
         static_assert(1010 == test_zip() ,"");
-        */
 
         constexpr int
         zip_in_place_edits() {
