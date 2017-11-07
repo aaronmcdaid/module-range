@@ -307,17 +307,15 @@ namespace orange {
     is_range_v = orange_utils:: is_invokable_v<decltype(checker_for__is_range), T>;
 
 
-    /*  has_trait_{empty,advance,front_val,front_ref,pull}
+    /*  has_trait_{empty,advance,front,pull}
      *  ==================================================
-     *      In order to 'synthesize' the user-facing functions ( orange::front_val, orange::empty, and so on )
+     *      In order to 'synthesize' the user-facing functions ( orange::front, orange::empty, and so on )
      *  for a range type R, we need a convenient way to check which functions are provided in the trait<R>.
      *  These are the 'has_trait_*' functions defined here:
      */
 
     auto checker_for__has_trait_empty       = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::empty    (r) )){};
     auto checker_for__has_trait_advance     = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::advance  (r) )){};
-    auto checker_for__has_trait_front_val   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_val(r) )){};
-    auto checker_for__has_trait_front_ref   = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front_ref(r) )){};
     auto checker_for__has_trait_front       = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::front    (r) )){};
     auto checker_for__has_trait_pull        = [](auto&&r)->decltype(void( lookup_traits<decltype(r)>::pull     (r) )){};
 
@@ -325,10 +323,6 @@ namespace orange {
     has_trait_empty     = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_empty), R>;
     template<typename R> constexpr bool
     has_trait_advance   = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_advance), R>;
-    template<typename R> constexpr bool
-    has_trait_front_val = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_val), R>;
-    template<typename R> constexpr bool
-    has_trait_front_ref = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front_ref), R>;
     template<typename R> constexpr bool
     has_trait_front     = orange_utils:: is_invokable_v<decltype(checker_for__has_trait_front    ), R>;
     template<typename R> constexpr bool
@@ -338,7 +332,7 @@ namespace orange {
     /*
      * Users will never call the functions in the trait object directly.
      * Instead, we synthesize all the functions, where possible, such
-     * as orange:empty, orange::front_val, orange::advance.
+     * as orange:empty, orange::front, orange::advance.
      *
      * This design allows us to synthesize extra functions. For example,
      * if a trait has 'front' and 'advance', but not 'pull', then we
@@ -356,33 +350,6 @@ namespace orange {
     { return lookup_traits<R>::empty(r); }
 
 
-    // two overloads for 'front_val', as we can use 'front_ref'
-    // instead if it's present.
-    template<typename R , SFINAE_ENABLE_IF_CHECK( has_trait_front_val<R&> )>
-    auto constexpr
-    front_val  (R &r)
-    ->decltype(auto)
-    { return lookup_traits<R>::front_val(r); }
-
-    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && has_trait_front<R> )>
-    auto constexpr
-    front_val  (R &r)
-    {   return lookup_traits<R>::front(r); }
-
-    template<typename R , SFINAE_ENABLE_IF_CHECK( !has_trait_front_val<R&> && !has_trait_front<R> && has_trait_front_ref<R&> )>
-    auto constexpr
-    front_val  (R &r)
-    {   return lookup_traits<R>::front_ref(r); }
-
-
-    // one overload for 'front_ref'
-    template<typename R>
-    auto constexpr
-    front_ref  (R & r)
-    ->decltype(lookup_traits<R>::front_ref(r))
-    {   return lookup_traits<R>::front_ref(r); }
-
-
     // one overload for 'advance'
     template<typename R>
     auto constexpr
@@ -391,33 +358,13 @@ namespace orange {
     {   return lookup_traits<R>::advance(r); }
 
 
-    /* 'front'
-     * =======
-     * Try the 'front' trait first, then 'front_ref', then 'front_val'.
-     */
-    auto checker_for__has_orange_front_ref  = [](auto&&r)->decltype(void(  orange::front_ref(r) )){};
+    // 'front'
+
     template<typename R>
-    constexpr bool    has_orange_front_ref  = orange_utils:: is_invokable_v<decltype(checker_for__has_orange_front_ref), R >;
-
-    template<typename R
-            , SFINAE_ENABLE_IF_CHECK( has_trait_front<R> )>
     auto constexpr
     front    (R       &r)
-    ->decltype(auto)
+    ->decltype(lookup_traits<R>::front(r))
     {   return lookup_traits<R>::front(r); }
-
-    template<typename R
-            , SFINAE_ENABLE_IF_CHECK(!has_trait_front<R> && has_orange_front_ref<R>) >
-    auto constexpr
-    front    (R       &r)
-    ->decltype(orange::front_ref(r))
-    {   return orange::front_ref(r);}
-    template<typename R
-            , SFINAE_ENABLE_IF_CHECK(!has_trait_front<R> &&!has_orange_front_ref<R>) >
-    auto constexpr
-    front    (R       &r)
-    ->decltype(orange::front_val(r))
-    {   return orange::front_val(r);}
 
     /* Next, we see 'begin' and 'end', which are useful
      * for working with range-based for.
@@ -442,10 +389,9 @@ namespace orange {
     {   return lookup_traits<R>::end    (r); }
 
 
-    /* Three overloads for 'pull'.
+    /* Two overloads for 'pull'.
      *  1. has 'pull' in its trait
-     *  2. doesn't have 'pull' but does have 'front_val' and 'advance'
-     *  3. doesn't have 'pull' nor 'front_val' but does have 'front_ref' and 'advance'
+     *  2. doesn't have 'pull' but does have 'front' and 'advance'
      */
 
     // pull, via trait_pull
@@ -456,59 +402,31 @@ namespace orange {
     pull       (R       &r)
     { return lookup_traits<R>::pull     (r); }
 
-    // pull, via front_val
+    // pull, via front
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK(( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
-                    && !std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
+            , SFINAE_ENABLE_IF_CHECK(( !has_trait_pull <R&> && has_trait_front<R&> && has_trait_advance<R&>
+                    && !std::is_same<void, decltype( lookup_traits<R>::front(std::declval<R&>()) )>{}
                     ))
             >
-    auto constexpr
+    auto constexpr // TODO: proper as_value here, to convert nested refs (inside tuples) to values
     pull       (R       &r)
     {
-        auto copy = lookup_traits<R>::front_val(r);
+        auto copy = lookup_traits<R>::front(r);
         lookup_traits<R>::advance(r);
         return copy;
     }
 
-    // void version of pull, via front_val
+    // void version of pull, via front
     template<typename R
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front_val<R&> && has_trait_advance<R&>
-                    &&  std::is_same<void, decltype( lookup_traits<R>::front_val(std::declval<R&>()) )>{}
+            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && has_trait_front<R&> && has_trait_advance<R&>
+                    &&  std::is_same<void, decltype( lookup_traits<R>::front(std::declval<R&>()) )>{}
                     )
             >
     auto constexpr
     pull       (R       &r)
     -> void
     {
-        lookup_traits<R>::front_val(r);
-        lookup_traits<R>::advance(r);
-    }
-
-    // pull, via front_ref
-    template<typename R
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
-                    && !std::is_same<void, decltype( lookup_traits<R>::front_ref(std::declval<R&>()) )>{}
-                    )
-            >
-    auto constexpr
-    pull       (R       &r)
-    {
-        auto copy = lookup_traits<R>::front_ref(r);
-        lookup_traits<R>::advance(r);
-        return copy;
-    }
-
-    // void version for front_ref (actually, I guess front_ref should never return void!
-    template<typename R
-            , SFINAE_ENABLE_IF_CHECK( !has_trait_pull <R&> && !has_trait_front_val<R&> && has_trait_front_ref<R&> && has_trait_advance<R&>
-                    &&  std::is_same<void, decltype( lookup_traits<R>::front_ref(std::declval<R&>()) )>{}
-                    )
-            >
-    auto constexpr
-    pull       (R       &r)
-    ->void
-    {
-        lookup_traits<R>::front_ref(r);
+        lookup_traits<R>::front(r);
         lookup_traits<R>::advance(r);
     }
 }
@@ -541,7 +459,7 @@ namespace orange {
 
         template<typename R> static constexpr
         decltype(auto)
-        front_ref       (R & r)   { return * r.first ;}
+        front           (R & r)   { return * r.first ;}
     };
 
 
@@ -549,9 +467,8 @@ namespace orange {
         static_assert(is_range_v< std::pair< std::vector<int>::iterator,  std::vector<int>::iterator> >, "");
         static_assert(is_range_v< std::pair<int*, int*> >, "");
         static_assert( has_trait_empty    < std::pair<int*, int*> > , "");
-        static_assert(!has_trait_front_val< std::pair<int*, int*> > , "");
-        static_assert( has_trait_front_ref< std::pair<int*, int*> > , "");
-        static_assert(!has_trait_front_ref< std::vector<int> > , "");
+        static_assert( has_trait_front    < std::pair<int*, int*> > , "");
+        static_assert(!has_trait_front    < std::vector<int> > , "");
     }
 
 
@@ -563,7 +480,7 @@ namespace orange {
      *  definitions of the functions directly in your class. To do so, you need
      *  to create a typedef in your class called 'orange_traits_are_static_here'
      *  with type 'orange  ::orange_traits_are_static_here', and then provide
-     *  the *static* methods you want (named 'orange_empty', 'orange_front_val',
+     *  the *static* methods you want (named 'orange_empty', 'orange_front',
      *  and so on). To see an example of this, just scroll down to the
      *  'mapping_range' template below.
      *
@@ -592,16 +509,6 @@ namespace orange {
         advance    (R &  r)
         ->decltype(R:: orange_advance  (r))
         {   return R:: orange_advance  (r); }
-
-        template<typename R> static constexpr auto
-        front_ref  (R &  r)
-        ->decltype(R:: orange_front_ref(r))
-        {   return R:: orange_front_ref(r); }
-
-        template<typename R> static constexpr auto
-        front_val  (R &  r)
-        ->decltype(R:: orange_front_val(r))
-        {   return R:: orange_front_val(r); }
 
         template<typename R> static constexpr auto
         front      (R &  r)
@@ -657,7 +564,7 @@ namespace orange {
         bool orange_empty      (R &  r)   { return r.m_begin == r.m_end ;}
 
         template<typename R> static constexpr
-        T    orange_front_val  (R &  r)   { return r.m_begin; }
+        T    orange_front      (R &  r)   { return r.m_begin; }
 
         template<typename R> static constexpr
         void orange_advance    (R &  r)   {     ++ r.m_begin; }
@@ -754,7 +661,7 @@ namespace orange {
         template<typename M> static constexpr auto
         orange_advance    (M &m) ->void             { ++m.m_offset; }
         template<typename M> static constexpr auto
-        orange_front_ref  (M &m) ->decltype(auto)   { return m.m_array[m.m_offset]; }
+        orange_front      (M &m) ->decltype(auto)   { return m.m_array[m.m_offset]; }
     };
 
 
@@ -796,12 +703,8 @@ namespace orange {
         advance         (R & r)   { ++ r.first  ;}
 
         template<typename R> static constexpr
-        auto
-        front_val       (R & r)   { return * std::forward<R>(r) .first ;}
-
-        template<typename R> static constexpr
         decltype(auto)
-        front_ref       (R & r)   { return * std::forward<R>(r) .first ;}
+        front           (R & r)   { return * std::forward<R>(r) .first ;}
 
         template<typename R> static constexpr
         auto begin      (R & r)   { return r.first; }
@@ -846,11 +749,8 @@ namespace orange {
         orange_advance    (M &m) ->void
         { orange::advance( m.m_r ) ; }
         template<typename M> static constexpr auto
-        orange_front_val  (M &m) ->decltype(auto)
-        { return orange::front_val( m.m_r ) ;}
-        template<typename M> static constexpr auto
-        orange_front_ref  (M &m) ->decltype(auto)
-        { return orange::front_ref( m.m_r ) ;}
+        orange_front      (M &m) ->decltype(auto)
+        { return orange::front    ( m.m_r ) ;}
     };
 
     // as_range, for rvalues that aren't ranges. In this case, we wrap them
@@ -957,9 +857,7 @@ namespace orange {
 
     // |foreach|
     // =========
-    // Two overloads, depending on whether we have 'front_ref' or not
     template<typename R, typename Func
-            //, SFINAE_ENABLE_IF_CHECK( has_trait_front<R> || has_trait_front_ref<R> || has_trait_front_val<R> )
             >
     constexpr auto
     operator| (forward_this_with_a_tag<R,foreach_tag_t> r, Func && func)
@@ -986,12 +884,6 @@ namespace orange {
         orange_empty      (M &m) { return orange:: empty(m.m_r);}
         template<typename M> static constexpr void
         orange_advance    (M &m) { orange::advance( m.m_r ) ;}
-        template<typename M> static constexpr auto
-        orange_front_val  (M &m) { return m.m_f(orange::front_val  ( m.m_r )) ;}
-        template<typename M> static constexpr auto
-        orange_front_ref  (M &m)
-        ->decltype(m.m_f(orange::front_ref  ( m.m_r )) )
-        {   return m.m_f(orange::front_ref  ( m.m_r )) ;}
         template<typename M> static constexpr auto
         orange_front      (M &m)
         ->decltype(m.m_f(orange::front      ( m.m_r )) )
@@ -1025,47 +917,10 @@ namespace orange {
         orange_advance    (M &m) { orange::advance( m.m_r ) ;}
 
         template<typename M, size_t ... Is> static constexpr auto
-        orange_front_val_helper  (M &m, std::index_sequence<Is...>)
-        ->decltype(auto)
-        {   auto tup = orange::front_val (m.m_r); // store it here, so that it's not called multiple times in the pack expansion on the next line
-            return m.m_f( std::template get<Is>( std::move(tup)) ...); // move to force get to respect the ref-ness of the elements of the tuple
-        }
-
-        template<typename M, size_t ... Is> static constexpr auto
-        orange_front_ref_helper  (M &m, std::index_sequence<Is...>)
-        ->decltype(auto)
-        {   auto tup = orange::front_ref (m.m_r); // store it here, so that it's not called multiple times in the pack expansion on the next line
-            return m.m_f( std::template get<Is>( std::move(tup)) ...); // move to force get to respect the ref-ness of the elements of the tuple
-        }
-
-        template<typename M, size_t ... Is> static constexpr auto
         orange_front_helper  (M &m, std::index_sequence<Is...>)
         ->decltype(auto)
         {   auto tup = orange::front (m.m_r); // store it here, so that it's not called multiple times in the pack expansion on the next line
             return m.m_f( std::template get<Is>( std::move(tup)) ...); // move to force get to respect the ref-ness of the elements of the tuple
-        }
-
-        template<typename M> static constexpr auto
-        orange_front_val  (M &m)
-        ->decltype(auto)
-        {
-            constexpr size_t N = std::tuple_size< decltype(orange:: pull(m.m_r)) >();
-            return orange_front_val_helper(m, std::make_index_sequence<N>());
-        }
-
-        template< typename M> static constexpr auto
-        orange_front_ref  (M &m)
-        ->decltype(
-                    orange_front_ref_helper ( std::declval<M&>()
-                                        , std::make_index_sequence
-                                            <
-                                                std::tuple_size< decltype(orange:: front_ref(std::declval<M&>().m_r)) >{}
-                                            >{}
-                                        )
-                )
-        {
-            constexpr size_t N = std::tuple_size< decltype(orange:: front_ref(m.m_r)) >{};
-            return orange_front_ref_helper(m, std::make_index_sequence<N>());
         }
 
         template< typename M> static constexpr auto
@@ -1110,7 +965,7 @@ namespace orange {
         constexpr
         void
         skip_if_necessary() {
-            while(!orange::empty(m_r) && !m_f(orange::front_val(m_r)))
+            while(!orange::empty(m_r) && !m_f(orange::front(m_r)))
             { orange::advance(m_r); }
         }
 
@@ -1122,16 +977,12 @@ namespace orange {
 
         template<typename M> static constexpr decltype(auto)
         orange_empty      (M &m) { return orange:: empty    (m.m_r);}
-        template<typename M> static constexpr decltype(auto)
-        orange_front_val  (M &m) { return orange:: front_val(m.m_r);}
-        template<typename M> static constexpr auto
-        orange_front_ref  (M &m)
-        ->decltype(orange:: front_ref(m.m_r))
-        {   return orange:: front_ref(m.m_r);}
+
         template<typename M> static constexpr auto
         orange_front      (M &m)
         ->decltype(orange:: front    (m.m_r))
         {   return orange:: front    (m.m_r);}
+
         template<typename M> static constexpr void
         orange_advance    (M &m) { orange:: advance(m.m_r); m.skip_if_necessary(); }
     };
@@ -1154,7 +1005,7 @@ namespace orange {
 
         static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
-        using value_type = decltype (   func   (  orange::front_val( f.m_r )  ));
+        using value_type = decltype (   func   (  orange::front( f.m_r )  ));
         static_assert(!std::is_reference<value_type>{} ,"");
         std:: vector<value_type> res;
 
@@ -1229,7 +1080,8 @@ namespace orange {
         value_type total = 0;
 
         while(!orange::empty(r)) {
-            total += orange::pull(r);
+            total += orange:: front(r);
+            orange:: advance(r);
         }
 
         return total;
@@ -1242,11 +1094,11 @@ namespace orange {
 
         static_assert(!std::is_reference<decltype(f.m_r)>{}, "");
 
-        using value_type = decltype (   orange::front_val( f.m_r )  );
+        using value_type = decltype (   orange::front( f.m_r )  );
         std:: vector<value_type> res;
 
         while(!orange::empty(f.m_r) && how_many>0) {
-            res.push_back( orange::front_val(f.m_r));
+            res.push_back( orange::front(f.m_r));
             orange::advance(f.m_r);
             --how_many;
         }
@@ -1318,7 +1170,7 @@ namespace orange {
         constexpr
         double modifying_the_owning_stdarray() {
             auto r = as_range ( (double[]) { 1.5,0.1,2.5,2,4 } );
-            orange:: front_ref(r) += 1.0;
+            orange:: front(r) += 1.0;
             return std::move(r) | accumulate;
         }
         static_assert( 11.1 == modifying_the_owning_stdarray() , "");
@@ -1326,7 +1178,7 @@ namespace orange {
         constexpr
         int foo() {
             auto ooaa = as_range( (int[]) {10,20,30} );
-            orange:: front_ref(ooaa) += 100;
+            orange:: front(ooaa) += 100;
             return std::move(ooaa) | accumulate;
         }
         static_assert( 160 == foo() , "");
@@ -1425,38 +1277,28 @@ namespace orange {
      * ===
      */
     enum class enum_zip_policy_on_references
-                {   values_only
-                ,   always_references
-                ,   mixture };
+                {   to_value // get_one_item_to_return will apply std::decay_t to the result from each subrange
+                ,   as_is };
 
     template< size_t Index
             , enum_zip_policy_on_references policy
             , typename Z
-            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: values_only )
+            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: to_value )
             > static constexpr auto
     get_one_item_to_return(Z & z)
-    -> decltype(auto)
-    { return orange::front_val(std::template get<Index>(z.m_ranges)); }
+    -> std::decay_t<decltype(
+               orange::front(std::template get<Index>(z.m_ranges))
+       )>
+    {   return orange::front(std::template get<Index>(z.m_ranges)); }
 
     template< size_t Index
             , enum_zip_policy_on_references policy
             , typename Z
-            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: always_references )
+            , SFINAE_ENABLE_IF_CHECK( policy == enum_zip_policy_on_references:: as_is )
             > static constexpr auto
     get_one_item_to_return(Z & z)
-    ->decltype(orange::front_ref(std::template get<Index>(z.m_ranges)))
-    { return orange::front_ref(std::template get<Index>(z.m_ranges)); }
-
-    template< size_t Index
-            , enum_zip_policy_on_references policy
-            , typename Z
-            , typename subR = decltype(std::template get<Index>(std::declval<Z>().m_ranges))
-            , SFINAE_ENABLE_IF_CHECK (   policy == enum_zip_policy_on_references:: mixture
-                    )
-            > static constexpr auto
-    get_one_item_to_return(Z & z)
-    -> decltype(auto)
-    { return orange::front(std::template get<Index>(z.m_ranges)) ; }
+    ->decltype(orange::front(std::template get<Index>(z.m_ranges)))
+    {   return orange::front(std::template get<Index>(z.m_ranges)); }
 
     template< typename Z
             , enum_zip_policy_on_references my_policy
@@ -1482,11 +1324,6 @@ namespace orange {
         zip_front(std::index_sequence<Indices...>)
         ->decltype(orange_utils::mk_tuple(orange:: get_one_item_to_return<Indices, my_policy>(m_z)...))
         {   return orange_utils::mk_tuple(orange:: get_one_item_to_return<Indices, my_policy>(m_z)...); }
-
-        template<size_t ... Indices> auto constexpr
-        zip_front_ref(std::index_sequence<Indices...>)
-        ->decltype(orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...))
-        {   return orange_utils::mk_tuple(orange::front_ref(std::template get<Indices>(m_z.m_ranges))...); }
     };
 
     template< enum_zip_policy_on_references my_policy
@@ -1527,24 +1364,6 @@ namespace orange {
             return orange:: zip_helper<Z,my_policy>{z}.zip_advance(std::make_index_sequence<N>());
         }
 
-        template< typename Z
-                , typename ...
-                , SFINAE_ENABLE_IF_CHECK( my_policy !=  enum_zip_policy_on_references:: values_only )
-            > static constexpr auto
-        orange_front_ref    (Z &  z)
-        ->decltype(orange:: zip_helper<Z,my_policy>{z}.zip_front_ref(std::make_index_sequence<N>()))
-        {
-            return orange:: zip_helper<Z,my_policy>{z}.zip_front_ref(std::make_index_sequence<N>());
-        }
-
-        template<typename Z> static constexpr auto
-        orange_front_val    (Z &  z)    ->decltype(auto)
-        {
-            return orange:: zip_helper< Z
-                                      , enum_zip_policy_on_references:: values_only
-                                      > {z}.zip_front(std::make_index_sequence<N>());
-        }
-
         template<typename Z> static constexpr auto
         orange_front        (Z &  z)    ->decltype(auto)
         {
@@ -1567,62 +1386,41 @@ namespace orange {
         }
     };
 
-    // zip_val
+    // zip
     template<typename ... Rs
-            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
-            >
-    auto constexpr
-    zip_val(Rs && ... rs) {
-        return  zip_t<enum_zip_policy_on_references :: values_only, std::decay_t<Rs>...>
-                ( std::forward<Rs>(rs)...) ;
-    }
-
-    // zip_ref
-    template< typename ... Rs
-            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
-            >
-    auto constexpr
-    zip_ref(Rs && ... rs) {
-        static_assert( all_true( has_trait_front_ref<Rs>                ... ),"Can't use 'zip_ref' as one of the zipped ranges doesn't have 'front_ref'");
-        return  zip_t<enum_zip_policy_on_references:: always_references, std::decay_t<Rs>...>
-                ( std::forward<Rs>(rs)...) ;
-    }
-
-    // zip - use front_ref where possible, front_val otherwise, different for each sub-range
-    template< typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
             >
     auto constexpr
     zip(Rs && ... rs) {
-        return  zip_t<enum_zip_policy_on_references:: mixture, std::decay_t<Rs>...>
+        return  zip_t<enum_zip_policy_on_references :: to_value, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
     }
 
-    // If 'zip', 'zip_val' or 'zip_ref' is given a non-range, then apply 'as_range' and forward them
+    // zip_as_is
     template<typename ... Rs
-            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
-            > auto constexpr
-    zip_val(Rs && ... rs)
-    -> decltype(auto)
-    {
-        return zip_val( orange::as_range(std::forward<Rs>(rs))...) ;
+            , SFINAE_ENABLE_IF_CHECK( all_true(is_range_v<Rs>...) )
+            >
+    auto constexpr
+    zip_as_is(Rs && ... rs) {
+        return  zip_t<enum_zip_policy_on_references :: as_is, std::decay_t<Rs>...>
+                ( std::forward<Rs>(rs)...) ;
     }
-    template<typename ... Rs
-            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
-            > auto constexpr
-    zip_ref(Rs && ... rs)
-    -> decltype(auto)
-    {
-        return zip_ref( orange::as_range(std::forward<Rs>(rs))...) ;
-    }
+
+
+    // If 'zip' or 'zip_as_is' is given a non-range, then apply 'as_range' and forward them
     template<typename ... Rs
             , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
             > auto constexpr
     zip(Rs && ... rs)
     -> decltype(auto)
-    {
-        return zip( orange::as_range(std::forward<Rs>(rs))...) ;
-    }
+    { return zip( orange::as_range(std::forward<Rs>(rs))...) ; }
+
+    template<typename ... Rs
+            , SFINAE_ENABLE_IF_CHECK( !all_true(is_range_v<Rs>...) )
+            > auto constexpr
+    zip_as_is(Rs && ... rs)
+    -> decltype(auto)
+    { return zip_as_is( orange::as_range(std::forward<Rs>(rs))...) ; }
 
     namespace testing_namespace {
         template<typename T>
@@ -1639,55 +1437,29 @@ namespace orange {
             int     i [] = {1,2,3};
             double  d [] = {1.0,2.5,3.0};
             double  t = 0.0;
-            zip_val( i, d ) |foreach| summer_t<double>{t};
+            zip( i, d ) |foreach| summer_t<double>{t};
             return t;
         }
 
+        void zip_as_is_types() {
+            int ai[] = {4};
+            auto z = zip_as_is(ai, ints());
+            auto zi = zip_as_is(ints(), ints());
+            auto za = zip_as_is(ai, ai);
+
+            static_assert(std::is_same  < decltype(orange::front    (z ))   , std::tuple<int &, int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (zi))   , std::tuple<int  , int  > >{}, "");
+            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
+        }
         void zip_types() {
             int ai[] = {4};
             auto z = zip(ai, ints());
             auto zi = zip(ints(), ints());
             auto za = zip(ai, ai);
 
-            static_assert(std::is_same  < decltype(orange::front_val(z ))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front_val(zi))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
-
-            static_assert(std::is_same  < decltype(orange::front    (z ))   , std::tuple<int &, int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front    (zi))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
-
-            //static_assert(std::is_same  < decltype(orange::front_ref(z ))   , std::tuple<int &, int &> >{}, ""); // error, correctly
-            //static_assert(std::is_same  < decltype(orange::front_ref(zi))   , std::tuple<int &, int &> >{}, ""); // error, correctly
-            static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, "");
-        }
-        void zip_val_types() {
-            int ai[] = {4};
-            auto z = zip_val(ai, ints());
-            auto zi = zip_val(ints(), ints());
-            auto za = zip_val(ai, ai);
-
-            static_assert(std::is_same  < decltype(orange::front_val(z ))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front_val(zi))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
-
             static_assert(std::is_same  < decltype(orange::front    (z ))   , std::tuple<int  , int  > >{}, "");
             static_assert(std::is_same  < decltype(orange::front    (zi))   , std::tuple<int  , int  > >{}, "");
             static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int  , int  > >{}, "");
-
-            //static_assert(std::is_same  < decltype(orange::front_ref(z ))   , std::tuple<int &, int &> >{}, ""); // error, correctly
-            //static_assert(std::is_same  < decltype(orange::front_ref(zi))   , std::tuple<int &, int &> >{}, ""); // error, correctly
-            //static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, ""); // error, correctly
-        }
-        void zip_ref_types() {
-            int ai[] = {4};
-            //auto z = zip_ref(ai, ints()); // can't be made. This is correct
-            //auto zi = zip_ref(ints(), ints()); // can't be made. This is correct
-            auto za = zip_ref(ai, ai);
-
-            static_assert(std::is_same  < decltype(orange::front_val(za))   , std::tuple<int  , int  > >{}, "");
-            static_assert(std::is_same  < decltype(orange::front    (za))   , std::tuple<int &, int &> >{}, "");
-            static_assert(std::is_same  < decltype(orange::front_ref(za))   , std::tuple<int &, int &> >{}, "");
         }
         void zip_recursive_types()
         {
@@ -1696,27 +1468,22 @@ namespace orange {
             double ad[] = {4,7,2,9,3,7};
 
             {
-                auto zrec = zip(ai, zip(ac, ad));
-                static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<int , std::tuple<char , double > >    >{},"");
-                static_assert(std::is_same<decltype( orange::front_ref(zrec) ), std::tuple<int&, std::tuple<char&, double&> >    >{},"");
+                auto zrec = zip_as_is(ai, zip_as_is(ac, ad));
                 static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<int&, std::tuple<char&, double&> >    >{},"");
             }
 
             {
-                auto zrec = zip(ai, zip(ac, ints(), ad));
-                static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<int , std::tuple<char , int, double > >    >{},"");
+                auto zrec = zip_as_is(ai, zip_as_is(ac, ints(), ad));
                 static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<int&, std::tuple<char&, int, double&> >    >{},"");
             }
 
             {
-                auto zrec = zip(zip(ai, zip(ac, ints(), ad)));
-                static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<std::tuple<int , std::tuple<char , int, double > > >  >{},"");
+                auto zrec = zip_as_is(zip_as_is(ai, zip_as_is(ac, ints(), ad)));
                 static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<std::tuple<int&, std::tuple<char&, int, double&> > >  >{},"");
             }
 
             {
-                auto zrec = zip(zip(zip(ac, ints()))); // without the strange is_same<Ts,Rs> check in zip_t constructor, this failed on clang
-                static_assert(std::is_same<decltype( orange::front_val(zrec) ), std::tuple<std::tuple<std::tuple<char , int > > >  >{},"");
+                auto zrec = zip_as_is(zip_as_is(zip_as_is(ac, ints()))); // without the strange is_same<Ts,Rs> check in zip_t constructor, this failed on clang
                 static_assert(std::is_same<decltype( orange::front    (zrec) ), std::tuple<std::tuple<std::tuple<char&, int > > >  >{},"");
             }
         }
