@@ -598,6 +598,33 @@ namespace orange {
     pair_of_values<int> ints() { return {0,std::numeric_limits<int>::max()}; }
 
 
+    template<typename T>
+    struct replicate_t
+    {
+        int64_t m_n;
+        T m_t;
+        static_assert(!std::is_reference<T>{} ,"");
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+        template<typename R> static constexpr auto
+        orange_empty      (R &r) ->bool             { return r.m_n <= 0;}
+        template<typename R> static constexpr auto
+        orange_advance    (R &r) ->void             { --r.m_n; }
+        template<typename R> static constexpr auto
+        orange_front      (R &r) ->T                { return r.m_t; }
+    };
+
+    template<typename T>
+    auto constexpr
+    replicate(int64_t n, T t)
+    { return replicate_t<T>{n,std::move(t)}; }
+
+    template<typename T>
+    auto constexpr
+    repeat   (T t)
+    { return replicate_t<T>{std::numeric_limits<int64_t>::max(),std::move(t)}; }
+
+
 
     /*
      * Next, a 'pair_of_iterators' type in the orange:: namespace. The main (only?)
@@ -1535,5 +1562,24 @@ namespace orange {
                 |accumulate;
         }
         static_assert(609 == apply_test(), "");
+
+        constexpr
+        int
+        replicate_test()
+        {
+            return replicate(5, 100) | accumulate;
+        }
+        static_assert(500 == replicate_test() ,"");
+
+        constexpr
+        int
+        repeat_test()
+        {
+            return zip(repeat(42), replicate(101, 0))
+                    |mapr| get_I_t<0>{}
+                    |accumulate;
+        }
+        static_assert(4242 == repeat_test() ,"");
+
     }
 } // namespace orange

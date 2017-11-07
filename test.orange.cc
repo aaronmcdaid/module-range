@@ -39,4 +39,6 @@ int main () {
             PP(*i);
         }
     }
+
+    PP(replicate(5, std::string("five")) | collect);
 }
