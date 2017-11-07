@@ -1557,7 +1557,7 @@ namespace orange {
 
     template<typename F>
     auto constexpr
-    operator* (apply_pack_tag_t, F && f)
+    operator% (apply_pack_tag_t, F && f)
     -> apply_pack_helper<F>
     { return {std::forward<F>(f)}; }
 
@@ -1569,7 +1569,7 @@ namespace orange {
 
             return
             zip(a1,a2,ints())
-                |mapr| apply_pack*(sum_all_args_t{})
+                |mapr| apply_pack % sum_all_args
                 |accumulate;
         }
         static_assert(609 == apply_test(), "");
