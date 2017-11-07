@@ -1461,7 +1461,7 @@ namespace orange {
             { return (*this)(a+b, us...); }
 
             constexpr sum_all_args_t(){}
-        };
+        } constexpr sum_all_args;
 
         template<size_t I>
         struct get_I_t {
