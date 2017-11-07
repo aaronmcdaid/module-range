@@ -587,6 +587,15 @@ namespace orange {
         auto orange_end        (R &  r)   { return impl:: iter_is_own_value<T>{r.m_end  };}
     };
 
+    struct intsFrom0_t
+    {
+        constexpr
+        pair_of_values<int>
+        operator() (int u) const
+        { return {0,u}; }
+
+        constexpr intsFrom0_t(){}
+    } constexpr intsFrom0;
     inline
     constexpr
     pair_of_values<int> ints(int u) { return {0,u}; }
