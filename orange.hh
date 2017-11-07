@@ -121,6 +121,7 @@
 #include<tuple>
 #include<vector>
 #include<limits>
+#include<memory>
 
  /* SFINAE_ENABLE_IF_CHECK
   * ======================
@@ -850,6 +851,8 @@ namespace orange {
                                         constexpr            accumulate_tag_t       accumulate;    // no need for 'tagger_t', this directly runs
     struct concat_tag_t{constexpr concat_tag_t(){}};
                                         constexpr            concat_tag_t           concat;    // no need for 'tagger_t', this directly runs
+    struct memoize_tag_t{constexpr memoize_tag_t(){}};
+                                        constexpr            memoize_tag_t           memoize;    // no need for 'tagger_t', this directly runs
 
 
     // the type to capture the value, i.e. for the left-hand '|'
@@ -1123,6 +1126,73 @@ namespace orange {
         return {std::move(r)};
     }
 
+
+    /*  |memoize
+     *      first time 'front' is called, store the value and return
+     *      the copy later
+     */
+    template<typename R>
+    struct memoize_helper
+    {
+        static_assert(!std::is_reference<R>{} ,"");
+        using val_type = decltype(orange::front(std::declval<R&>()));
+        static_assert(!std::is_reference<val_type>{} ,"");
+
+        R m_r;
+        std::unique_ptr<val_type> m_current;
+
+        constexpr
+        memoize_helper(R && r)
+        : m_r(std::move(r))
+        {
+            if(!orange::empty(m_r))
+            {
+                m_current = std::make_unique<val_type>(orange::front(m_r));
+                orange::advance(m_r);
+            }
+        }
+
+        using orange_traits_are_static_here = orange:: orange_traits_are_static_here;
+
+
+        template<typename M> static constexpr bool
+        orange_empty      (M &m)
+        {
+            //std::cout << m.m_current.get() << '\n';
+            return !m.m_current;
+        }
+
+        template<typename M> static constexpr void
+        orange_advance    (M &m)
+        {
+            //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
+            m.m_current.reset();
+            //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
+            if(!orange::empty(m.m_r)) {
+                m.m_current = std::make_unique<val_type>(orange::front(m.m_r));
+                //std::cout << __LINE__ << "\t:" << orange::front(m.m_r) << '\n';
+                //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
+                orange::advance(m.m_r);
+                //std::cout << __LINE__ << '\t' << m.m_current.get() << '\n';
+            }
+        }
+
+        template<typename M> static constexpr auto
+        orange_front      (M &m)
+        -> val_type&
+        { return *m.m_current; }
+    };
+    template<typename R
+            , SFINAE_ENABLE_IF_CHECK( is_range_v<R> )
+            >
+    auto constexpr
+    operator| (R r, memoize_tag_t)
+    -> memoize_helper<R>
+    {
+        static_assert( is_range_v<R> ,"");
+
+        return {std::move(r)};
+    }
 
     namespace testing_namespace {
         static_assert( 10 ==  (ints(5) | accumulate)  ,"");

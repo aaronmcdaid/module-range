@@ -47,5 +47,13 @@ int main () {
             |concat
             |foreach| [](auto &&x ) { PP(x); }
             ;
+        ints(4)
+            |mapr| intsFrom0
+            |memoize
+            |concat
+            |foreach| [](auto &&x ) {
+                PP(x);
+            }
+        ;
     }
 }
