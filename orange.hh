@@ -268,6 +268,17 @@ namespace orange_utils {
         return std::tuple<Ts...>{ std::forward<Ts>(ts)... };
     }
 
+    template<typename T>
+    struct remove_RVALUE_reference
+    { using type = T; };
+    template<typename T>
+    struct remove_RVALUE_reference<T&&>
+    { using type = T; };
+
+    template<typename T>
+    auto non_rref(T&& t)
+    -> typename remove_RVALUE_reference<T>::type
+    { return t; }
 }
 
 namespace orange {
