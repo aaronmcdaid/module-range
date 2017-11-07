@@ -1351,6 +1351,7 @@ namespace orange {
             >
     auto constexpr
     zip_as_is(Rs && ... rs) {
+        static_assert( true  ,""); // this assert saves "g++ (GCC) 5.5.0" from a crash about missing constructor!
         return  zip_t<enum_zip_policy_on_references :: as_is, std::decay_t<Rs>...>
                 ( std::forward<Rs>(rs)...) ;
     }
