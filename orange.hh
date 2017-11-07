@@ -1562,7 +1562,7 @@ namespace orange {
             int a1[] = {2,-3,5,-8,8};
             int a2[] = {10,-20,30,-40,50};
 
-            zip(a1,a2,ints())
+            zip_as_is(a1,a2,ints())
                 |filter|    compose(less_than_this{0}, get_I_t<0>{})
                 |mapr|      get_I_t<1>{}
                 |foreach|   negate_me_in_place
