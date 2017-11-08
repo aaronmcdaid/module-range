@@ -27,28 +27,58 @@ auto type_as_string(T) {
 #define TEST_ME_AWARE_OF_COMMAS(description, expected)  test_me(__FILE__, __LINE__, description, expected, #expected)
 #define TEST_ME(description, ...)  TEST_ME_AWARE_OF_COMMAS(description, ( __VA_ARGS__ ))
 
+auto checker_for__has_equality        = [](auto&&x,auto&&y)->decltype(void( x==y )){};
+auto suppress_a_linker_warning_about_unused() { return &checker_for__has_equality; }
+
+template<typename T, typename U> constexpr bool
+has_equality     = orange_utils:: is_invokable_v<decltype(checker_for__has_equality), T, U>;
+
 template<typename V>
 struct test_me_helper_struct
 {
     static_assert(!std::is_reference<V>{} ,"");
     std::string m_label;
+    std::string m_text_of_expected;
     V m_expected;
 
+
     template<typename F>
-    void
+    auto
     operator^ (F f) const
+    -> std::enable_if_t< has_equality< decltype(f()) , decltype(m_expected) >>
     {
         auto answer = f();
         bool did_pass = answer == m_expected;
         std:: cout << (did_pass ? " pass \t" : "*FAIL*\t");
         std:: cout << m_label;
+
+        std:: cout << "\t" << m_text_of_expected;
         if(!did_pass)
-        {
-            std::cout
-                << "\t\tactual = "
-                << answer;
-        }
+        { std::cout << "\t!!!===\t" << answer; }
+
         std:: cout << '\n';
+    }
+
+    template<typename F>
+    auto
+    operator^ (F f) const
+    -> std::enable_if_t<!has_equality< decltype(f()) , decltype(m_expected) >>
+    {
+        std:: cout << "*FAIL*\t";
+        std:: cout << m_label;
+        std:: cout
+            << "\t"
+            << type_as_string(m_expected)
+            << "\t!!!!====\t" << type_as_string(f());
+
+        std:: cout << "\t" << m_text_of_expected;
+        std::cout
+                << "\t\tvalues: {{ "
+                << f()
+                << " }}"
+                ;
+
+        std::cout << '\n';
     }
 };
 
@@ -62,9 +92,12 @@ test_me ( char const * file_name
         )
 {
     using format:: operator"" _format;
-    auto label = "{0}:{1}\t\"{2}\"\t{3}"_format(file_name, line_number, description, value_as_text_via_macro);
+    auto label = "{0}:{1}\t\"{2}\""_format(file_name, line_number, description);
     return  test_me_helper_struct<std::remove_reference_t<V>>
-            { label, std::forward<V>(v) };
+            { label
+            , value_as_text_via_macro
+            , std::forward<V>(v)
+            };
 }
 
 
@@ -134,5 +167,17 @@ int main () {
             , std::vector<int>{200,202}
             ) ^ []()
             { return std::vector<int>{200,201,202}; };
+
+    TEST_ME ( "|concat with refs. side-effects."
+            , std::vector<int>{200,202}
+            ) ^ []()
+            {
+                int a[]{1,2,3};
+                return
+                a
+                    |mapr|
+                        [](auto x){return x * 1.5;}
+                    |collect;
+            };
 }
 
