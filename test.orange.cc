@@ -1,6 +1,7 @@
 #include "orange.hh"
 #include "../bits.and.pieces/PP.hh"
 #include "../bits.and.pieces/utils.hh"
+#include "../module-format/format.hh"
 #include<iostream>
 #include<vector>
 #include<memory>
@@ -13,6 +14,50 @@ template<typename ... T>
 void print_type(T && ...) {
     std::cout << __PRETTY_FUNCTION__ << '\n';
 }
+
+#define TEST_ME_AWARE_OF_COMMAS(description, expected)  test_me(__FILE__, __LINE__, description, expected, #expected)
+#define TEST_ME(description, ...)  TEST_ME_AWARE_OF_COMMAS(description, ( __VA_ARGS__ ))
+
+template<typename V>
+struct test_me_helper_struct
+{
+    static_assert(!std::is_reference<V>{} ,"");
+    std::string m_label;
+    V m_expected;
+
+    template<typename F>
+    void
+    operator^ (F f) const
+    {
+        auto answer = f();
+        bool did_pass = answer == m_expected;
+        std:: cout << (did_pass ? " pass \t" : "*FAIL*\t");
+        std:: cout << m_label;
+        if(!did_pass)
+        {
+            std::cout
+                << "\t\tactual = "
+                << answer;
+        }
+        std:: cout << '\n';
+    }
+};
+
+template<typename V>
+auto
+test_me ( char const * file_name
+        , int line_number
+        , std::string description
+        , V && v
+        , std::string value_as_text_via_macro
+        )
+{
+    using format:: operator"" _format;
+    auto label = "{0}:{1}\t\"{2}\"\t{3}"_format(file_name, line_number, description, value_as_text_via_macro);
+    return  test_me_helper_struct<std::remove_reference_t<V>>
+            { label, std::forward<V>(v) };
+}
+
 
 int main () {
 
@@ -55,5 +100,30 @@ int main () {
                 PP(x);
             }
         ;
+
+        int a[]{0,1,2};
+        auto ar = as_range(a);
+        PP(ar|collect);
+
+        std::cout << '\n';
+        (decltype(ar)[]) { ar, ar }
+            |concat
+            //|memoize // memoize is optional here, but it changes the result
+            |foreach| [](auto &&x ) {
+                PP(x);
+                x += 100;
+            };
+        PP(ar|collect);
     }
+
+    TEST_ME ( "|concat with refs. side-effects."
+            , std::vector<int>{200,201,202}
+            ) ^ []()
+            { return std::vector<int>{200,201,202}; };
+
+    TEST_ME ( "|concat with refs. side-effects."
+            , std::vector<int>{200,202}
+            ) ^ []()
+            { return std::vector<int>{200,201,202}; };
 }
+
