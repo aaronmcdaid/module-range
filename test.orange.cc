@@ -14,6 +14,15 @@ template<typename ... T>
 void print_type(T && ...) {
     std::cout << __PRETTY_FUNCTION__ << '\n';
 }
+template<typename T>
+auto type_as_string(T) {
+    string t = __PRETTY_FUNCTION__;
+    t = t.substr( t.find('[')+1 ,string::npos);
+    t = t.substr( t.find('=')+1 ,string::npos);
+    if(t.back() == ' ') t=t.substr(1);
+    if(t.back() == ']') t=t.substr(0, t.length()-1);
+    return t;
+}
 
 #define TEST_ME_AWARE_OF_COMMAS(description, expected)  test_me(__FILE__, __LINE__, description, expected, #expected)
 #define TEST_ME(description, ...)  TEST_ME_AWARE_OF_COMMAS(description, ( __VA_ARGS__ ))
